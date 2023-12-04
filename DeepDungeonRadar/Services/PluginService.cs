@@ -25,9 +25,9 @@ using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 
 
-namespace DeepDungeonRadar
+namespace DeepDungeonRadar.Services
 {
-    public class Service
+    public class PluginService
     {
         public static Plugin Plugin { get; private set; }
 
@@ -83,7 +83,7 @@ namespace DeepDungeonRadar
 
         private static PluginCommandManager<IDalamudPlugin> PluginCommandManager;
 
-        public Service(Plugin plugin, DalamudPluginInterface pluginInterface)
+        public PluginService(Plugin plugin, DalamudPluginInterface pluginInterface)
         {
             Plugin = plugin;
             if (!pluginInterface.Inject(this))
@@ -97,7 +97,7 @@ namespace DeepDungeonRadar
             Address.Setup(SigScanner);
         }
 
-        public static void Initialize(Plugin plugin, DalamudPluginInterface pluginInterface) => _ = new Service(plugin, pluginInterface);
+        public static void Initialize(Plugin plugin, DalamudPluginInterface pluginInterface) => _ = new PluginService(plugin, pluginInterface);
 
         public static void Dispose()
         {
@@ -126,13 +126,13 @@ namespace DeepDungeonRadar
         private void AddCommandHandlers()
         {
             foreach (var (command, commandInfo) in pluginCommands)
-                Service.CommandManager.AddHandler(command, commandInfo);
+                PluginService.CommandManager.AddHandler(command, commandInfo);
         }
 
         private void RemoveCommandHandlers()
         {
             foreach (var (command, _) in pluginCommands)
-                Service.CommandManager.RemoveHandler(command);
+                PluginService.CommandManager.RemoveHandler(command);
         }
 
         private IEnumerable<(string, CommandInfo)> GetCommandInfoTuple(MethodInfo method)

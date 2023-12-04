@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using Dalamud.Configuration;
 using DeepDungeonRadar.Enums;
+using DeepDungeonRadar.Services;
 
 namespace DeepDungeonRadar;
 
@@ -47,6 +48,6 @@ public class Configuration : IPluginConfiguration
 
     public void Save()
     {
-        Service.PluginInterface!.SavePluginConfig(this);
+        PluginService.PluginInterface!.SavePluginConfig(this);
     }
 }

@@ -5,6 +5,7 @@ using System.Numerics;
 using Dalamud.Interface.Windowing;
 using Dalamud.Logging;
 using DeepDungeonRadar.Enums;
+using DeepDungeonRadar.Services;
 using DeepDungeonRadar.UI;
 using ImGuiNET;
 
@@ -22,7 +23,7 @@ public sealed class ConfigWindow : Window, IDisposable
     {
         Size = new(480f, 640f);
         SizeCondition = ImGuiCond.FirstUseEver;
-        config = Service.Config;
+        config = PluginService.Config;
         deepDungeonObjectsImportCache = new();
     }
 
@@ -181,8 +182,8 @@ public sealed class ConfigWindow : Window, IDisposable
         if (ImGui.Button("导出当前记录点到剪贴板"))
         {
             PluginLog.Information("exporting...");
-            PluginLog.Information($"exported {(from i in Service.Config.DeepDungeonObjects group i by i.Territory).Count()} territories, {config.DeepDungeonObjects.Count(i => i.Type == DeepDungeonObjectType.Trap)} traps, {config.DeepDungeonObjects.Count(i => i.Type == DeepDungeonObjectType.AccursedHoard)} hoards.");
-            ImGui.SetClipboardText(Service.Config.DeepDungeonObjects.ToCompressedString());
+            PluginLog.Information($"exported {(from i in PluginService.Config.DeepDungeonObjects group i by i.Territory).Count()} territories, {config.DeepDungeonObjects.Count(i => i.Type == DeepDungeonObjectType.Trap)} traps, {config.DeepDungeonObjects.Count(i => i.Type == DeepDungeonObjectType.AccursedHoard)} hoards.");
+            ImGui.SetClipboardText(PluginService.Config.DeepDungeonObjects.ToCompressedString());
         }
         if (!deepDungeonObjectsImportCache.Any())
         {

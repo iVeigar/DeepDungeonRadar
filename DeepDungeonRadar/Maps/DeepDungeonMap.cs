@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using Dalamud.Logging;
 using DeepDungeonRadar.Enums;
+using DeepDungeonRadar.Services;
 using DeepDungeonRadar.UI;
 using ImGuiNET;
 
@@ -16,9 +17,9 @@ public static class DeepDungeonMap
     }
     public static void DrawCurrentTerrytoryMap(this ImDrawListPtr windowDrawList, Vector3 pivotWorldPos, Vector2 pivotWindowPos, float zoom, float rotation, uint color)
     {
-        if (!TryGetMap(Util.TerritoryToBg(Service.ClientState.TerritoryType), out var map))
+        if (!TryGetMap(Util.TerritoryToBg(PluginService.ClientState.TerritoryType), out var map))
         {
-            PluginLog.Warning($"map not found, territory id: {Service.ClientState.TerritoryType}");
+            PluginLog.Warning($"map not found, territory id: {PluginService.ClientState.TerritoryType}");
             return;
         }
         var (roomCenters, (roomShape, roomWidth)) = map;

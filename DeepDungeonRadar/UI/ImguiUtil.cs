@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Numerics;
 using Dalamud.Interface;
+using DeepDungeonRadar.Services;
 using ImGuiNET;
 using ImGuiScene;
 
@@ -54,7 +55,7 @@ internal static class ImguiUtil
         {
             var currentRotation = i * CircleSegmentFullRotation;
             var segmentWorld = center + (radius * currentRotation.ToNormalizedVector2()).ToVector3();
-            Service.GameGui.WorldToScreen(segmentWorld, out var segmentScreen);
+            PluginService.GameGui.WorldToScreen(segmentWorld, out var segmentScreen);
             drawList.PathLineTo(segmentScreen);
         }
 
@@ -66,7 +67,7 @@ internal static class ImguiUtil
 
     public static bool DrawRingWorld(this ImDrawListPtr drawList, Vector3 center, float radius, float thickness, uint color)
     {
-        Service.GameGui.WorldToScreen(center, out var _, out var inView);
+        PluginService.GameGui.WorldToScreen(center, out var _, out var inView);
         if (inView)
         {
             drawList.DrawCircleInternal(center, radius, thickness, color, false);
@@ -76,7 +77,7 @@ internal static class ImguiUtil
 
     public static bool DrawRingWorldWithText(this ImDrawListPtr drawList, Vector3 center, float radius, float thickness, uint color, string text, Vector2 offset = default)
     {
-        Service.GameGui.WorldToScreen(center, out var screenPos, out var inView);
+        PluginService.GameGui.WorldToScreen(center, out var screenPos, out var inView);
         if (inView)
         {
             drawList.DrawCircleInternal(center, radius, thickness, color, false);
@@ -228,12 +229,12 @@ internal static class ImguiUtil
     {
         if (!string.IsNullOrWhiteSpace(str))
         {
-            drawList.DrawText(pos, str, fgcolor, Service.Config.RadarTextStroke, true, bgcolor);
+            drawList.DrawText(pos, str, fgcolor, PluginService.Config.RadarTextStroke, true, bgcolor);
         }
-        drawList.AddCircleFilled(pos, Service.Config.RadarObjectDotSize, fgcolor);
-        if (Service.Config.RadarObjectDotStroke != 0f)
+        drawList.AddCircleFilled(pos, PluginService.Config.RadarObjectDotSize, fgcolor);
+        if (PluginService.Config.RadarObjectDotStroke != 0f)
         {
-            drawList.AddCircle(pos, Service.Config.RadarObjectDotSize, bgcolor, 0, Service.Config.RadarObjectDotStroke);
+            drawList.AddCircle(pos, PluginService.Config.RadarObjectDotSize, bgcolor, 0, PluginService.Config.RadarObjectDotStroke);
         }
     }
 

@@ -6,6 +6,7 @@ using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
 using DeepDungeonRadar.Enums;
+using DeepDungeonRadar.Services;
 using ImGuiScene;
 using Newtonsoft.Json;
 
@@ -88,7 +89,7 @@ internal static class Util
 
     public static string GetRelative(this nint i)
     {
-        return (i.ToInt64() - Service.SigScanner.Module.BaseAddress.ToInt64()).ToString("X");
+        return (i.ToInt64() - PluginService.SigScanner.Module.BaseAddress.ToInt64()).ToString("X");
     }
 
     public static string ToCompressedString<T>(this T obj)
