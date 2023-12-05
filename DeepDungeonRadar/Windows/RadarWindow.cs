@@ -2,12 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
-using Dalamud.Logging;
 using DeepDungeonRadar.Enums;
 using DeepDungeonRadar.Extensions;
 using DeepDungeonRadar.Maps;
@@ -20,12 +18,6 @@ namespace DeepDungeonRadar.Windows;
 public sealed class RadarWindow : Window, IDisposable
 {
     private readonly Configuration config;
-
-    private static Vector3 _meWorldPos = Vector3.Zero;
-
-    private readonly HashSet<Vector2> HoardBlackList = new();
-
-    private readonly HashSet<Vector2> TrapBlacklist = new();
 
     private List<(Vector3 worldpos, uint fgcolor, uint bgcolor, string name)> RadarDrawList { get; } = new();
 
@@ -51,24 +43,15 @@ public sealed class RadarWindow : Window, IDisposable
     public RadarWindow() : base("Deep Dungeon Radar Show", ImGuiWindowFlags.None)
     {
         config = PluginService.Config;
-        PluginService.ClientState.TerritoryChanged += TerritoryChanged;
-    }
-
-    private void TerritoryChanged(object? sender, ushort e)
-    {
-        PluginLog.Information($"territory changed to: {e}");
-        TrapBlacklist.Clear();
-        HoardBlackList.Clear();
     }
 
     public void Dispose()
     {
-        PluginService.ClientState.TerritoryChanged -= TerritoryChanged;
     }
 
     public override void PreOpenCheck()
     {
-        IsOpen = PluginService.Condition[ConditionFlag.InDeepDungeon] && config.RadarEnabled;
+        IsOpen = TnTService.InDeepDungeon() && config.RadarEnabled;
         Flags = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.NoBackground;
         if (config.RadarClickThrough)
         {
@@ -114,16 +97,15 @@ public sealed class RadarWindow : Window, IDisposable
 
     private void EnumerateAllObjects()
     {
-        if (!PluginService.Condition[ConditionFlag.InDeepDungeon])
+        if (!TnTService.InDeepDungeon())
             return;
-        var first = true;
 
+        var first = true;
         foreach (var o in PluginService.ObjectTable)
         {
             if (first)
             {
                 first = false;
-                _meWorldPos = o.Position;
                 continue;
             }
             uint fgColor;
@@ -166,10 +148,8 @@ public sealed class RadarWindow : Window, IDisposable
                 item = string.IsNullOrEmpty(o.GetDictionaryName()) ? $"{o.ObjectKind} {o.DataId}" : o.GetDictionaryName();
                 break;
             case DetailLevel.物体名距离:
-                item = string.IsNullOrEmpty(o.GetDictionaryName()) ? $"{o.ObjectKind} {o.DataId}" : $"{o.GetDictionaryName()} {o.Position.Distance2D(_meWorldPos):F2}m";
+                item = string.IsNullOrEmpty(o.GetDictionaryName()) ? $"{o.ObjectKind} {o.DataId}" : $"{o.GetDictionaryName()} {o.Position.Distance2D(TnTService.MeWorldPos):F2}m";
                 break;
-            default:
-                throw new ArgumentOutOfRangeException();
         }
         RadarDrawList.Add((o.Position, fgcolor, bgcolor, item));
     }
@@ -186,13 +166,13 @@ public sealed class RadarWindow : Window, IDisposable
 
         // Draw map
         windowDrawList.ChannelsSetCurrent(0);
-        windowDrawList.DrawCurrentTerrytoryMap(_meWorldPos, windowCenter, zoom, rotation, config.RadarMapColor);
+        windowDrawList.DrawCurrentTerrytoryMap(TnTService.MeWorldPos, windowCenter, zoom, rotation, config.RadarMapColor);
 
         // Draw dots of objects 
         windowDrawList.ChannelsSetCurrent(1);
         foreach (var (worldpos, fgcolor, bgcolor, name) in RadarDrawList)
         {
-            Vector2 pos = worldpos.ToRadarWindowPos(_meWorldPos, windowCenter, zoom, rotation);
+            Vector2 pos = worldpos.ToRadarWindowPos(TnTService.MeWorldPos, windowCenter, zoom, rotation);
             windowDrawList.DrawMapTextDot(pos, name, fgcolor, bgcolor);
         }
         if (config.RadarShowCenter)
@@ -212,7 +192,7 @@ public sealed class RadarWindow : Window, IDisposable
         windowDrawList.ChannelsSetCurrent(2);
         if (config.RadarShowInfo)
         {
-            var text = $" {windowSize.X / 2f / zoom:F2}m X: {_meWorldPos.X:N3} Y: {_meWorldPos.Y:N3} Z: {_meWorldPos.Z:N3} ";
+            var text = $"{windowSize.X / 2f / zoom:F2}m X: {TnTService.MeWorldPos.X:N3} Y: {TnTService.MeWorldPos.Y:N3} Z: {TnTService.MeWorldPos.Z:N3}";
             windowDrawList.DrawTextWithBg(windowLeftTop + ImGui.GetWindowSize() - ImGui.CalcTextSize(text), text, Color.White, Color.TransBlack, false);
         }
         if (!config.RadarClickThrough)
@@ -222,6 +202,7 @@ public sealed class RadarWindow : Window, IDisposable
             if (ImguiUtil.IconButton(icon, "ToggleSnap", new Vector2(25f, 25f)))
             {
                 config.RadarOrientationFixed ^= true;
+                config.Save();
             }
             ImGui.SetCursorPosX(5f);
             if (ImguiUtil.IconButton(FontAwesomeIcon.PlusCircle, "zoom++", new Vector2(25f, 25f)))
