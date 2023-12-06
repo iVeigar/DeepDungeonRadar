@@ -21,12 +21,12 @@ public sealed class TnTService : IDisposable
     private readonly HashSet<Vector2> TrapBlacklist = new();
 
     public static Vector3 MeWorldPos { get; private set; } = Vector3.Zero;
-
+    private bool Ready = false;
     private bool NextFloorTransfer = false;
     private DeepDungeonTrapStatus TrapStatus = DeepDungeonTrapStatus.Active;
     private bool AccursedHoardCofferDiscovered = false;
-    private bool FortuneActivated = false;
-    private bool NextFloorFortune = false;
+    private bool IntuitionActivated = false;
+    private bool NextFloorIntuition = false;
 
     private static DeepDungeonObjectLocationEqualityComparer DeepDungeonObjectLocationEqual { get; } = new();
 
@@ -76,7 +76,7 @@ public sealed class TnTService : IDisposable
                 if (o.DataId == 2007543U && !AccursedHoardCofferDiscovered)
                 {
                     AccursedHoardCofferDiscovered = true;
-                    NextFloorFortune = false;
+                    NextFloorIntuition = false;
                 }
                 if (!HoardBlackList.Contains(location))
                 {
@@ -145,7 +145,7 @@ public sealed class TnTService : IDisposable
             }
         }
 
-        if (!FortuneActivated && !AccursedHoardCofferDiscovered)
+        if (!IntuitionActivated && !AccursedHoardCofferDiscovered)
         {
             radius = 2.0f;
             color = Color.Yellow;
@@ -166,8 +166,9 @@ public sealed class TnTService : IDisposable
     private void EnterDeepDungeon()
     {
         NextFloorTransfer = true;
-        NextFloorFortune = false;
+        NextFloorIntuition = false;
         NextFloor();
+        Ready = true;
     }
 
     private void NextFloor()
@@ -178,7 +179,7 @@ public sealed class TnTService : IDisposable
             NextFloorTransfer = false;
             TrapBlacklist.Clear();
             HoardBlackList.Clear();
-            FortuneActivated = NextFloorFortune;
+            IntuitionActivated = NextFloorIntuition;
             TrapStatus = DeepDungeonTrapStatus.Active;
         }
     }
@@ -188,6 +189,7 @@ public sealed class TnTService : IDisposable
         NextFloorTransfer = false;
         TrapBlacklist.Clear();
         HoardBlackList.Clear();
+        Ready = false;
     }
 
     public static bool InDeepDungeon()
@@ -225,14 +227,20 @@ public sealed class TnTService : IDisposable
                 case DataIds.DirectorUpdateDutyCommenced:
                 {
                     var contentId = ReadNumber(dataPtr, 4, 2);
-                    if (DeepDungeonContentInfo.ContentInfo.TryGetValue(contentId, out var _))
+                    if (!Ready && DeepDungeonContentInfo.ContentInfo.TryGetValue(contentId, out var _))
+                    {
+                        PluginService.ChatGui.Print("[DDR] OnDutyCommenced"); // TODO remove this Debug info
                         EnterDeepDungeon();
+                    }
                     break;
                 }
                 // OnDutyRecommenced
                 case DataIds.DirectorUpdateDutyRecommenced:
-                    if (NextFloorTransfer)
+                    if (Ready)
+                    {
+                        PluginService.ChatGui.Print("[DDR] OnDutyRecommenced"); // TODO remove this Debug info
                         NextFloor();
+                    }
                     break;
             }
         }
@@ -247,13 +255,15 @@ public sealed class TnTService : IDisposable
             else if (logId == DataIds.SystemLogDutyEnded)
                 ExitDeepDungeon();
             else if (logId == DataIds.SystemLogTransferenceInitiated)
+            {
+                PluginService.ChatGui.Print("[DDR] NextFloorTransfer = true"); // TODO remove this Debug info
                 NextFloorTransfer = true;
+            }
         }
     }
 
     private void OnPomanderUsed(Pomander pomander)
     {
-        PluginLog.Debug($"Pomander ID: {pomander}");
         switch (pomander)
         {
             case Pomander.Safety:
@@ -267,11 +277,13 @@ public sealed class TnTService : IDisposable
                     TrapStatus = DeepDungeonTrapStatus.Visible;
                 break;
 
-            case Pomander.Fortune:
-            case Pomander.FortuneProtomander:
-                FortuneActivated = true;
-                NextFloorFortune = true;
+            case Pomander.Intuition:
+            case Pomander.IntuitionProtomander:
+            {
+                IntuitionActivated = true;
+                NextFloorIntuition = true;
                 break;
+            }
         }
     }
 

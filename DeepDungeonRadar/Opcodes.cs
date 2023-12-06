@@ -1,87 +1,113 @@
-// ReSharper disable all
+// https://github.com/karashiiro/FFXIVOpcodes/blob/master/FFXIVOpcodes/Ipcs_cn.cs
 
 namespace DeepDungeonRadar
 {
-    ////////////////////////////////////////////////////////////////////////////////
-    /// Zone Connection IPC Codes
-    /**
-    * Server IPC Zone Type Codes.
-    */
-    enum ServerZoneIpcType : ushort
+    public enum ServerLobbyIpcType : ushort
     {
-        // Server Zone
-        ActorMove = 0x011a,
-        AoeEffect16 = 0x03c1,
-        ActorControl = 0x007a,
-        AirshipExplorationResult = 0x023e,
-        ActorSetPos = 0x0099,
-        ActorGauge = 0x01aa,
-        AoeEffect24 = 0x0138,
-        ActorControlSelf = 0x0139,
-        ActorControlTarget = 0x0103,
-        AirshipTimers = 0x03a5,
-        AirshipStatus = 0x0240,
-        ActorCast = 0x0358,
-        AirshipStatusList = 0x0389,
-        AoeEffect8 = 0x00f4,
-        AoeEffect32 = 0x014c,
-        BossStatusEffectList = 0x0124,
-        CEDirector = 0x034f,
-        CFPreferredRole = 0x03bf,
-        CurrencyCrystalInfo = 0x0182,
-        CFNotify = 0x00ec,
-        ContainerInfo = 0x00df,
-        DesynthResult = 0x03d6,
-        EnvironmentControl = 0x011e,
-        ExamineSearchInfo = 0x02cc,
-        EffectResult = 0x01fb,
-        EventPlay = 0x00a0,
-        EventFinish = 0x0183,
-        EventStart = 0x0327,
-        EventPlay4 = 0x00b4,
-        Examine = 0x00f6,
-        Effect = 0x0385,
-        FreeCompanyInfo = 0x017d,
-        FreeCompanyDialog = 0x0113,
-        FateInfo = 0x020e,
-        HousingWardInfo = 0x0080,
-        InitZone = 0x024d,
-        IslandWorkshopSupplyDemand = 0x033c,
-        ItemMarketBoardInfo = 0x017b,
-        InventoryActionAck = 0x00e9,
-        ItemInfo = 0x0214,
-        InventoryTransaction = 0x0111,
-        InventoryTransactionFinish = 0x0271,
-        Logout = 0x012b,
-        MiniCactpotInit = 0x0377,
-        MarketBoardItemListingHistory = 0x02e4,
-        MarketBoardItemListingCount = 0x02ba,
-        MarketBoardPurchase = 0x03a7,
-        MarketBoardItemListing = 0x0188,
-        MarketBoardSearchResult = 0x0174,
-        NpcSpawn2 = 0x03c7,
-        NpcSpawn = 0x00d8,
-        ObjectSpawn = 0x0161,
-        PlaceFieldMarkerPreset = 0x00fb,
-        PrepareZoning = 0x0311,
-        Playtime = 0x02d0,
-        PlayerStats = 0x006c,
-        PlayerSpawn = 0x00c0,
-        PlaceFieldMarker = 0x02ae,
-        PlayerSetup = 0x028d,
-        RetainerInformation = 0x02a6,
-        RSV = 0x016c,
-        ResultDialog = 0x010f,
-        StatusEffectList = 0x0223,
-        SubmarineProgressionStatus = 0x0242,
-        StatusEffectList2 = 0x0289,
-        SystemLogMessage = 0x010d,
-        SubmarineTimers = 0x0274,
-        SubmarineStatusList = 0x0395,
-        StatusEffectList3 = 0x02c4,
-        SubmarineExplorationResult = 0x0179,
-        UpdateHpMpTp = 0x0227,
-        UpdateInventorySlot = 0x0216,
-        UpdateSearchInfo = 0x00cf,
-        UpdateClassInfo = 0x006a,    };
+
+    };
+
+    public enum ClientLobbyIpcType : ushort
+    {
+
+    };
+
+    public enum ServerZoneIpcType : ushort
+    {
+        ActorCast = 0x03DC,
+        ActorControl = 0x0108,
+        ActorControlSelf = 0x0154,
+        ActorControlTarget = 0x0320,
+        ActorGauge = 0x0293,
+        ActorMove = 0x021B,
+        ActorSetPos = 0x013A,
+        AirshipExplorationResult = 0x0245,
+        AirshipStatus = 0x0139,
+        AirshipStatusList = 0x01A8,
+        AirshipTimers = 0x016F,
+        AoeEffect16 = 0x00F4,
+        AoeEffect24 = 0x015A,
+        AoeEffect32 = 0x01E5,
+        AoeEffect8 = 0x02B7,
+        BossStatusEffectList = 0x0103,
+        CEDirector = 0x02FB,
+        CFNotify = 0x009C,
+        CFPreferredRole = 0x0166,
+        ContainerInfo = 0x0168,
+        CurrencyCrystalInfo = 0x00F7,
+        DesynthResult = 0x0094,
+        Effect = 0x0348,
+        EffectResult = 0x01F8,
+        EnvironmentControl = 0x017A,
+        EventFinish = 0x0390,
+        EventPlay = 0x0398,
+        EventPlay4 = 0x02F1,
+        EventStart = 0x028A,
+        Examine = 0x00BA,
+        ExamineSearchInfo = 0x019F,
+        FateInfo = 0x00FE,
+        FreeCompanyDialog = 0x009D,
+        FreeCompanyInfo = 0x028D,
+        HousingWardInfo = 0x0337,
+        InitZone = 0x006E,
+        InventoryActionAck = 0x02CF,
+        InventoryTransaction = 0x0222,
+        InventoryTransactionFinish = 0x00CB,
+        IslandWorkshopSupplyDemand = 0x0192,
+        ItemInfo = 0x0147,
+        ItemMarketBoardInfo = 0x03BC,
+        Logout = 0x00AC,
+        MarketBoardItemListing = 0x014A,
+        MarketBoardItemListingCount = 0x0353,
+        MarketBoardItemListingHistory = 0x018A,
+        MarketBoardPurchase = 0x025B,
+        MarketBoardSearchResult = 0x016C,
+        MiniCactpotInit = 0x0352,
+        NpcSpawn = 0x030C,
+        NpcSpawn2 = 0x039C,
+        ObjectSpawn = 0x03E2,
+        PlaceFieldMarker = 0x031E,
+        PlaceFieldMarkerPreset = 0x008D,
+        PlayerSetup = 0x01AE,
+        PlayerSpawn = 0x00FC,
+        PlayerStats = 0x0358,
+        Playtime = 0x0215,
+        PrepareZoning = 0x03A3,
+        ResultDialog = 0x0238,
+        RetainerInformation = 0x038B,
+        RSV = 0x014F,
+        StatusEffectList = 0x035B,
+        StatusEffectList2 = 0x00EF,
+        StatusEffectList3 = 0x0354,
+        SubmarineExplorationResult = 0x0078,
+        SubmarineProgressionStatus = 0x0225,
+        SubmarineStatusList = 0x02D1,
+        SubmarineTimers = 0x01DB,
+        SystemLogMessage = 0x0290,
+        UpdateClassInfo = 0x0177,
+        UpdateHpMpTp = 0x03BB,
+        UpdateInventorySlot = 0x03C9,
+        UpdateSearchInfo = 0x00A2,
+    };
+
+    public enum ClientZoneIpcType : ushort
+    {
+        ChatHandler = 0x039F,
+        ClientTrigger = 0x00D7,
+        InventoryModifyHandler = 0x01FF,
+        MarketBoardPurchaseHandler = 0x024F,
+        SetSearchInfoHandler = 0x015D,
+        UpdatePositionHandler = 0x0112,
+        UpdatePositionInstance = 0x00F0,
+    };
+
+    public enum ServerChatIpcType : ushort
+    {
+
+    };
+
+    public enum ClientChatIpcType : ushort
+    {
+
+    };
 }
