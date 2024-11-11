@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface;
@@ -9,41 +10,35 @@ using Dalamud.Interface.Windowing;
 using DeepDungeonRadar.Enums;
 using DeepDungeonRadar.Extensions;
 using DeepDungeonRadar.Maps;
+using DeepDungeonRadar.Misc;
 using DeepDungeonRadar.Services;
 using DeepDungeonRadar.UI;
 using ImGuiNET;
-using ImGuiScene;
+using static DeepDungeonRadar.util.DeepDungeonUtil;
 namespace DeepDungeonRadar.Windows;
 
-public sealed class RadarWindow : Window, IDisposable
+public sealed class RadarWindow(DeepDungeonService dds, MapDrawer md) : Window("Deep Dungeon Radar Show", ImGuiWindowFlags.None), IDisposable
 {
-    private readonly Configuration config;
-
-    private List<(Vector3 worldpos, uint fgcolor, uint bgcolor, string name)> RadarDrawList { get; } = new();
+    private readonly Configuration config = Service.Config;
+    private readonly DeepDungeonService deepDungeonService = dds;
+    private readonly MapDrawer mapDrawer = md;
+    private List<(Vector3 worldpos, uint fgcolor, uint bgcolor, string name)> RadarDrawList { get; } = [];
 
     private static bool CanUseLargeFont => ImGui.GetIO().Fonts.Fonts.Size > 2;
     private bool usingLargeFont = false;
 
-    private float uvZoom1 = 8f;
-
-    private ref float UvZoom
+    private float uvZoom1 = 1f;
+    private float UvZoom
     {
-        get
+        get => uvZoom1;
+        set
         {
-            if (uvZoom1 < 1f)
-            {
-                uvZoom1 = 1f;
-            }
-            return ref uvZoom1;
+            if (value >= 0.1f && value < 5f)
+                uvZoom1 = value;
         }
     }
 
     internal readonly string[] specialObjectNames = { "传送石冢", "再生石冢", "传送灯笼", "再生灯笼", "传送装置", "再生灯笼" };
-    
-    public RadarWindow() : base("Deep Dungeon Radar Show", ImGuiWindowFlags.None)
-    {
-        config = PluginService.Config;
-    }
 
     public void Dispose()
     {
@@ -51,7 +46,7 @@ public sealed class RadarWindow : Window, IDisposable
 
     public override void PreOpenCheck()
     {
-        IsOpen = TnTService.InDeepDungeon() && config.RadarEnabled;
+        IsOpen = config.RadarEnabled && Service.Condition[ConditionFlag.InDeepDungeon] && !deepDungeonService.FloorTransfer && deepDungeonService.HasRadar;
         Flags = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.NoBackground;
         if (config.RadarClickThrough)
         {
@@ -80,7 +75,7 @@ public sealed class RadarWindow : Window, IDisposable
 
     public override void Draw()
     {
-        if (PluginService.ObjectTable == null) return;
+        if (Service.ObjectTable == null) return;
         EnumerateAllObjects();
         DrawRadar();
     }
@@ -97,17 +92,11 @@ public sealed class RadarWindow : Window, IDisposable
 
     private void EnumerateAllObjects()
     {
-        if (!TnTService.InDeepDungeon())
+        if (!InDeepDungeon)
             return;
 
-        var first = true;
-        foreach (var o in PluginService.ObjectTable)
+        foreach (var o in Service.ObjectTable.Skip(1))
         {
-            if (first)
-            {
-                first = false;
-                continue;
-            }
             uint fgColor;
             uint bgColor = Color.Black;
             if (o.ObjectKind == ObjectKind.BattleNpc && (BattleNpcSubKind)o.SubKind == BattleNpcSubKind.Enemy && !o.IsDead && o.IsTargetable)
@@ -137,7 +126,7 @@ public sealed class RadarWindow : Window, IDisposable
         }
     }
 
-    private void AddObjectToRadarDrawList(GameObject o, uint fgcolor, uint bgcolor, TextureWrap? icon = null)
+    private void AddObjectToRadarDrawList(IGameObject o, uint fgcolor, uint bgcolor)
     {
         string item = string.Empty;
         switch (config.RadarDetailLevel)
@@ -148,53 +137,48 @@ public sealed class RadarWindow : Window, IDisposable
                 item = string.IsNullOrEmpty(o.GetDictionaryName()) ? $"{o.ObjectKind} {o.DataId}" : o.GetDictionaryName();
                 break;
             case DetailLevel.物体名距离:
-                item = string.IsNullOrEmpty(o.GetDictionaryName()) ? $"{o.ObjectKind} {o.DataId}" : $"{o.GetDictionaryName()} {o.Position.Distance2D(TnTService.MeWorldPos):F2}m";
+                item = string.IsNullOrEmpty(o.GetDictionaryName()) ? $"{o.ObjectKind} {o.DataId}" : $"{o.GetDictionaryName()} {o.Position.Distance2D(MeWorldPos):F2}m";
                 break;
         }
         RadarDrawList.Add((o.Position, fgcolor, bgcolor, item));
     }
 
-    internal unsafe void DrawRadar()
+    private unsafe void DrawRadar()
     {
         var windowSize = ImGui.GetWindowSize();
         var windowLeftTop = ImGui.GetWindowPos();
         var windowCenter = windowLeftTop + windowSize / 2;
-        var zoom = windowSize.X * UvZoom / 2048f;
-        var rotation = config.RadarOrientationFixed ? 0 : -PluginService.Address.HRotation;
+        var zoom = windowSize.X * UvZoom / 256f;
+        var rotation = config.RadarOrientationFixed ? 0 : Service.Address.HRotation;
         var windowDrawList = ImGui.GetWindowDrawList();
         windowDrawList.ChannelsSplit(3);
 
         // Draw map
         windowDrawList.ChannelsSetCurrent(0);
-        windowDrawList.DrawCurrentTerrytoryMap(TnTService.MeWorldPos, windowCenter, zoom, rotation, config.RadarMapColor);
-
+        mapDrawer.Draw(windowDrawList, MeWorldPos.ToVector2(), windowCenter, zoom, rotation, config.RadarMapActiveForegroundColor, config.RadarMapActiveBackgroundColor, config.RadarMapInactiveForegroundColor, config.RadarMapInactiveBackgroundColor);
+        mapDrawer.DebugDraw();
         // Draw dots of objects 
         windowDrawList.ChannelsSetCurrent(1);
         foreach (var (worldpos, fgcolor, bgcolor, name) in RadarDrawList)
         {
-            Vector2 pos = worldpos.ToRadarWindowPos(TnTService.MeWorldPos, windowCenter, zoom, rotation);
+            Vector2 pos = worldpos.ToRadarWindowPos(MeWorldPos, windowCenter, zoom, rotation);
             windowDrawList.DrawMapTextDot(pos, name, fgcolor, bgcolor);
         }
         if (config.RadarShowCenter)
         {
-            windowDrawList.DrawMapTextDot(windowCenter, config.RadarDetailLevel > 0 ? "我" : null, Color.Cyan, Color.Black);
+            windowDrawList.DrawMapTextDot(windowCenter, config.RadarDetailLevel > 0 ? "我" : null, Color.Green, Color.Black);
             if (config.RadarShowAssistCircle)
             {
-                var meRotation = config.RadarOrientationFixed ? -PluginService.Address.HRotation : 0f;
-                windowDrawList.PathArcTo(windowCenter, zoom * 25f, meRotation - 1.5707964f - 0.7853982f, meRotation - 0.7853982f, 24);
+                var meRotation = config.RadarOrientationFixed ? -Service.Address.HRotation : 0f;
+                windowDrawList.PathArcTo(windowCenter, zoom * 25f, meRotation - MathF.PI * 0.75f, meRotation - MathF.PI * 0.25f, 24);
                 windowDrawList.PathLineTo(windowCenter);
-                windowDrawList.PathStroke(Color.Cyan, ImDrawFlags.Closed, 1.5f);
-                windowDrawList.AddCircle(windowCenter, zoom * 125f, Color.Grey, 100);
+                windowDrawList.PathStroke(Color.Green, ImDrawFlags.Closed, 1f);
+                windowDrawList.AddCircle(windowCenter, zoom * 128f, Color.TransGrey, 100);
             }
         }
 
         // Draw info
         windowDrawList.ChannelsSetCurrent(2);
-        if (config.RadarShowInfo)
-        {
-            var text = $"{windowSize.X / 2f / zoom:F2}m X: {TnTService.MeWorldPos.X:N3} Y: {TnTService.MeWorldPos.Y:N3} Z: {TnTService.MeWorldPos.Z:N3}";
-            windowDrawList.DrawTextWithBg(windowLeftTop + ImGui.GetWindowSize() - ImGui.CalcTextSize(text), text, Color.White, Color.TransBlack, false);
-        }
         if (!config.RadarClickThrough)
         {
             ImGui.SetCursorPos(new Vector2(5f, 5f));
@@ -207,17 +191,17 @@ public sealed class RadarWindow : Window, IDisposable
             ImGui.SetCursorPosX(5f);
             if (ImguiUtil.IconButton(FontAwesomeIcon.PlusCircle, "zoom++", new Vector2(25f, 25f)))
             {
-                UvZoom *= 1.1f;
+                UvZoom += 0.1f;
             }
             ImGui.SetCursorPosX(5f);
             if (ImguiUtil.IconButton(FontAwesomeIcon.MinusCircle, "zoom--", new Vector2(25f, 25f)))
             {
-                UvZoom *= 0.9f;
+                UvZoom -= 0.1f;
             }
         }
         if (ImGui.IsWindowHovered())
         {
-            UvZoom += UvZoom * ImGui.GetIO().MouseWheel * 0.1f;
+            UvZoom += ImGui.GetIO().MouseWheel * 0.1f;
         }
         windowDrawList.ChannelsMerge();
     }

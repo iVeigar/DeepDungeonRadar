@@ -1,11 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
 using Dalamud.Interface.Windowing;
-using Dalamud.Logging;
 using DeepDungeonRadar.Enums;
-using DeepDungeonRadar.Services;
 using DeepDungeonRadar.UI;
 using ImGuiNET;
 
@@ -14,17 +9,12 @@ namespace DeepDungeonRadar.Windows;
 public sealed class ConfigWindow : Window, IDisposable
 {
     private readonly Configuration config;
-    private HashSet<DeepDungeonObject> deepDungeonObjectsImportCache;
-    private bool importingError = false;
-    private string errorMessage = string.Empty;
-    private int treeLevel;
 
     public ConfigWindow() : base("Deep Dungeon Radar Config", ImGuiWindowFlags.None)
     {
         Size = new(480f, 640f);
         SizeCondition = ImGuiCond.FirstUseEver;
-        config = PluginService.Config;
-        deepDungeonObjectsImportCache = new();
+        config = Service.Config;
     }
 
     public void Dispose()
@@ -33,24 +23,6 @@ public sealed class ConfigWindow : Window, IDisposable
     }
 
     public override void Draw()
-    {
-        if (ImGui.BeginTabBar("tabbar", ImGuiTabBarFlags.None))
-        {
-            if (ImGui.BeginTabItem("雷达"))
-            {
-                DrawRadarTab();
-                ImGui.EndTabItem();
-            }
-            if (ImGui.BeginTabItem("深层迷宫记录"))
-            {
-                DrawDeepDungeonRecordTab();
-                ImGui.EndTabItem();
-            }
-            ImGui.EndTabBar();
-        }
-    }
-
-    private void DrawRadarTab()
     {
         var radarEnabled = config.RadarEnabled;
         if (ImGui.Checkbox("启用##RadarEnabled", ref radarEnabled))
@@ -80,13 +52,6 @@ public sealed class ConfigWindow : Window, IDisposable
             config.Save();
         }
 
-        var radarLockSizePos = config.RadarLockSizePos;
-        if (ImGui.Checkbox("锁定窗口位置和尺寸##RadarLockSizePos", ref radarLockSizePos))
-        {
-            config.RadarLockSizePos = radarLockSizePos;
-            config.Save();
-        }
-
         var radarClickThrough = config.RadarClickThrough;
         if (ImGui.Checkbox("鼠标穿透##RadarClickThrough", ref radarClickThrough))
         {
@@ -94,25 +59,63 @@ public sealed class ConfigWindow : Window, IDisposable
             config.Save();
         }
 
-        var radarShowInfo = config.RadarShowInfo;
-        if (ImGui.Checkbox("显示缩放比例和坐标信息##RadarShowInfo", ref radarShowInfo))
+        var radarLockSizePos = config.RadarLockSizePos;
+        if (ImGui.Checkbox("锁定窗口位置和尺寸##RadarLockSizePos", ref radarLockSizePos))
         {
-            config.RadarShowInfo = radarShowInfo;
+            config.RadarLockSizePos = radarLockSizePos;
             config.Save();
         }
-
-        var radarMapColor = ImGui.ColorConvertU32ToFloat4(config.RadarMapColor);
-        ImGui.TextUnformatted("地图颜色");
-        ImGui.SameLine();
-        ImguiUtil.ColorPickerWithPalette(1, string.Empty, ref radarMapColor, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.AlphaPreview);
-        uint color = ImGui.ColorConvertFloat4ToU32(radarMapColor);
-        if (color != config.RadarMapColor)
+        var radarDrawStraightCorridor = config.RadarDrawStraightCorridor;
+        if (ImGui.Checkbox("画直线型过道##radarDrawStraightCorridor", ref radarDrawStraightCorridor))
         {
-            config.RadarMapColor = color;
+            config.RadarDrawStraightCorridor = radarDrawStraightCorridor;
             config.Save();
         }
+        
+        if (ImGui.CollapsingHeader("地图颜色"))
+        {
+            ImGui.Text("不可达区域边界"); ImGui.SameLine();
+            var radarMapColor1 = ImGui.ColorConvertU32ToFloat4(config.RadarMapInactiveForegroundColor);
+            ImguiUtil.ColorPickerWithPalette(1, string.Empty, ref radarMapColor1, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.AlphaPreview);
+            uint color1 = ImGui.ColorConvertFloat4ToU32(radarMapColor1);
+            if (color1 != config.RadarMapInactiveForegroundColor)
+            {
+                config.RadarMapInactiveForegroundColor = color1;
+                config.Save();
+            }
 
-        ImGui.Separator();
+            ImGui.Text("不可达区域背景"); ImGui.SameLine();
+            var radarMapColor2 = ImGui.ColorConvertU32ToFloat4(config.RadarMapInactiveBackgroundColor);
+            ImguiUtil.ColorPickerWithPalette(2, string.Empty, ref radarMapColor2, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.AlphaPreview);
+            uint color2 = ImGui.ColorConvertFloat4ToU32(radarMapColor2);
+            if (color2 != config.RadarMapInactiveBackgroundColor)
+            {
+                config.RadarMapInactiveBackgroundColor = color2;
+                config.Save();
+            }
+
+            ImGui.Text("可达区域边界"); ImGui.SameLine();
+            var radarMapColor3 = ImGui.ColorConvertU32ToFloat4(config.RadarMapActiveForegroundColor);
+            ImguiUtil.ColorPickerWithPalette(3, string.Empty, ref radarMapColor3, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.AlphaPreview);
+            uint color3 = ImGui.ColorConvertFloat4ToU32(radarMapColor3);
+            if (color3 != config.RadarMapActiveForegroundColor)
+            {
+                config.RadarMapActiveForegroundColor = color3;
+                config.Save();
+            }
+
+            ImGui.Text("可达区域背景"); ImGui.SameLine();
+            var radarMapColor4 = ImGui.ColorConvertU32ToFloat4(config.RadarMapActiveBackgroundColor);
+            ImguiUtil.ColorPickerWithPalette(4, string.Empty, ref radarMapColor4, ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.AlphaPreview);
+            uint color4 = ImGui.ColorConvertFloat4ToU32(radarMapColor4);
+            if (color4 != config.RadarMapActiveBackgroundColor)
+            {
+                config.RadarMapActiveBackgroundColor = color4;
+                config.Save();
+            }
+        }
+
+
         ImGui.TextUnformatted("标记设置");
 
         var radarObjectDotSize = config.RadarObjectDotSize;
@@ -151,161 +154,6 @@ public sealed class ConfigWindow : Window, IDisposable
         {
             config.RadarTextStroke = radarTextStroke;
             config.Save();
-        }
-    }
-
-    private void DrawDeepDungeonRecordTab()
-    {
-        ImGui.TextWrapped("记录并显示本机深层迷宫攻略过程中出现过的陷阱与宝藏位置。\n你也可以导出自己的记录并与他人共享情报。");
-
-        var deepDungeon_EnableTrapView = config.DeepDungeon_EnableTrapView;
-        if (ImGui.Checkbox("深层迷宫实体显示", ref deepDungeon_EnableTrapView))
-        {
-            config.DeepDungeon_EnableTrapView = deepDungeon_EnableTrapView;
-            config.Save();
-        }
-
-        var deepDungeon_ShowObjectCount = config.DeepDungeon_ShowObjectCount;
-        if (ImGui.Checkbox("显示计数", ref deepDungeon_ShowObjectCount))
-        {
-            config.DeepDungeon_ShowObjectCount = deepDungeon_ShowObjectCount;
-            config.Save();
-        }
-
-        var deepDungeon_ObjectShowDistance = config.DeepDungeon_ObjectShowDistance;
-        if (ImGui.SliderFloat("最远显示距离", ref deepDungeon_ObjectShowDistance, 15f, 500f, deepDungeon_ObjectShowDistance.ToString("##.0m"), ImGuiSliderFlags.Logarithmic))
-        {
-            config.DeepDungeon_ObjectShowDistance = deepDungeon_ObjectShowDistance;
-            config.Save();
-        }
-        ImGui.Separator();
-        if (ImGui.Button("导出当前记录点到剪贴板"))
-        {
-            PluginLog.Information("exporting...");
-            PluginLog.Information($"exported {(from i in PluginService.Config.DeepDungeonObjects group i by i.Territory).Count()} territories, {config.DeepDungeonObjects.Count(i => i.Type == DeepDungeonObjectType.Trap)} traps, {config.DeepDungeonObjects.Count(i => i.Type == DeepDungeonObjectType.AccursedHoard)} hoards.");
-            ImGui.SetClipboardText(PluginService.Config.DeepDungeonObjects.ToCompressedString());
-        }
-        if (!deepDungeonObjectsImportCache.Any())
-        {
-            ImGui.SameLine();
-            if (ImGui.Button("从剪贴板导入已有的记录点"))
-            {
-                importingError = false;
-                try
-                {
-                    HashSet<DeepDungeonObject>? source = ImGui.GetClipboardText().DecompressStringToObject<HashSet<DeepDungeonObject>>();
-                    if (source != null && source.Any())
-                    {
-                        deepDungeonObjectsImportCache = source;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    importingError = true;
-                    PluginLog.Warning(ex, "error when importing deep dungeon object list.");
-                    errorMessage = ex.Message;
-                }
-            }
-            if (importingError)
-            {
-                ImGui.TextColored(new Vector4(1f, 0f, 0f, 1f), "导入发生错误，请检查导入的字符串和日志。");
-                ImGui.TextColored(new Vector4(1f, 0f, 0f, 1f), errorMessage);
-            }
-            return;
-        }
-        ImGui.SameLine();
-        if (ImGui.Button("正在准备导入..."))
-        {
-            deepDungeonObjectsImportCache.Clear();
-            PluginLog.Debug("user canceled importing task.", Array.Empty<object>());
-            return;
-        }
-        bool treeLevelChanged = ImGui.SliderInt("树视图展开级别", ref treeLevel, 1, 4, getformat(treeLevel));
-        var bgGroups = from i in deepDungeonObjectsImportCache
-                       group i by Util.TerritoryToBg(i.Territory) into i
-                       orderby i.Key
-                       select i;
-        ImGui.TextWrapped($"将要导入 {bgGroups.Count()} 个区域的 {deepDungeonObjectsImportCache.Count} 条记录。\n包含 " +
-            $"{bgGroups.Select(i => (from j in i
-                                     where j.Type == DeepDungeonObjectType.Trap
-                                     group j by j.Location2D).Count()).Sum()} 个陷阱位置，" +
-            $"{bgGroups.Select(i => (from j in i
-                                     where j.Type == DeepDungeonObjectType.AccursedHoard
-                                     group j by j.Location2D).Count()).Sum()} 个宝藏位置。");
-        if (ImGui.BeginChild("deepdungeonobjecttreeview##Radar", new Vector2(-1f, (0f - ImGui.GetFrameHeightWithSpacing()) * 2f), true))
-        {
-            foreach (var bgGroup in bgGroups)
-            {
-                if (treeLevelChanged)
-                {
-                    ImGui.SetNextItemOpen(treeLevel > 1);
-                }
-                if (ImGui.TreeNodeEx($"{bgGroup.Key.GetName()}##DDTerritoryKey", ImGuiTreeNodeFlags.Framed))
-                {
-                    foreach (var typeGroup in from i in bgGroup
-                                              group i by i.Type into i
-                                              orderby i.Key
-                                              select i)
-                    {
-                        if (treeLevelChanged)
-                        {
-                            ImGui.SetNextItemOpen(treeLevel > 2);
-                        }
-                        var locationGroups = typeGroup.GroupBy(i => i.Location2D);
-                        if (ImGui.TreeNodeEx($"{typeGroup.Key} ({locationGroups.Count()})##{bgGroup.Key}", ImGuiTreeNodeFlags.SpanAvailWidth))
-                        {
-                            foreach (var locationGroup in locationGroups.OrderByDescending(i => i.Count()))
-                            {
-                                if (treeLevelChanged)
-                                {
-                                    ImGui.SetNextItemOpen(treeLevel > 3);
-                                }
-                                if (ImGui.TreeNodeEx($"{locationGroup.Key} ({locationGroup.Count()})##{typeGroup.Key}{bgGroup.Key}", ImGuiTreeNodeFlags.SpanAvailWidth))
-                                {
-                                    foreach (var ddobj in locationGroup.OrderBy(i => i.InstanceId))
-                                    {
-                                        ImGui.TextUnformatted($"{ddobj.Territory} : {ddobj.Base} : {ddobj.InstanceId:X}");
-                                    }
-                                    ImGui.TreePop();
-                                }
-                            }
-                            ImGui.TreePop();
-                        }
-                    }
-                    ImGui.TreePop();
-                }
-            }
-            ImGui.EndChild();
-        }
-        ImGui.TextColored(new Vector4(1f, 0.8f, 0f, 1f), "确认后数据将合并到本机记录且不可撤销，请确认数据来源可靠。要继续吗？");
-        ImGui.Spacing();
-        if (ImGui.Button("取消导入##importDecline"))
-        {
-            deepDungeonObjectsImportCache.Clear();
-            PluginLog.Debug("user canceled importing task.");
-            return;
-        }
-        ImGui.SameLine();
-        if (ImGui.Button("确认导入##importAccept"))
-        {
-            int count = config.DeepDungeonObjects.Count;
-            config.DeepDungeonObjects.UnionWith(deepDungeonObjectsImportCache);
-            config.Save();
-            deepDungeonObjectsImportCache.Clear();
-            int num = config.DeepDungeonObjects.Count - count;
-            PluginLog.Information($"imported {num} deep dungeon object records.");
-        }
-        static string getformat(int input)
-        {
-            return input switch
-            {
-                0 => "默认",
-                1 => "全部折叠",
-                2 => "展开到物体类型",
-                3 => "展开到物体位置",
-                4 => "全部展开",
-                _ => "invalid",
-            };
         }
     }
 }

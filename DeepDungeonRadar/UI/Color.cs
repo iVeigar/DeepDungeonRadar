@@ -38,5 +38,7 @@ public static class Color // ABGR
 
     public const uint Grey = 0xFF808080;
 
+    public const uint TransGrey = 0x80808080;
+
     public const uint White = 0xFFFFFFFF;
 }

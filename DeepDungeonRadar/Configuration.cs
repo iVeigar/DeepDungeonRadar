@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Numerics;
 using Dalamud.Configuration;
 using DeepDungeonRadar.Enums;
-using DeepDungeonRadar.Services;
-
 namespace DeepDungeonRadar;
 
 [Serializable]
@@ -14,14 +10,14 @@ public class Configuration : IPluginConfiguration
 
     public bool RadarEnabled { get; set; } = true;
 
-    public uint RadarMapColor { get; set; } = 0xFF00E000; //Grass Green
-
-    public bool RadarLockSizePos { get; set; } = false;
-
+    public uint RadarMapInactiveForegroundColor { get; set; } = 0x60808080;
+    public uint RadarMapInactiveBackgroundColor { get; set; } = 0x40202020;
+    public uint RadarMapActiveForegroundColor { get; set; } = 0xE0FDE888;
+    public uint RadarMapActiveBackgroundColor { get; set; } = 0xE0505050;
     public bool RadarClickThrough { get; set; } = false;
-
+    public bool RadarLockSizePos { get; set; } = false;
     public bool RadarShowInfo { get; set; } = true;
-
+    public bool RadarDrawStraightCorridor { get; set; } = false;
     public bool RadarOrientationFixed { get; set; } = true;
 
     public DetailLevel RadarDetailLevel { get; set; } = DetailLevel.仅物体名;
@@ -38,8 +34,6 @@ public class Configuration : IPluginConfiguration
 
     public bool RadarUseLargeFont { get; set; } = false;
 
-    public HashSet<DeepDungeonObject> DeepDungeonObjects { get; set; } = new();
-
     public float DeepDungeon_ObjectShowDistance { get; set; } = 100f;
 
     public bool DeepDungeon_EnableTrapView { get; set; } = true;
@@ -48,6 +42,6 @@ public class Configuration : IPluginConfiguration
 
     public void Save()
     {
-        PluginService.PluginInterface!.SavePluginConfig(this);
+        Service.PluginInterface!.SavePluginConfig(this);
     }
 }

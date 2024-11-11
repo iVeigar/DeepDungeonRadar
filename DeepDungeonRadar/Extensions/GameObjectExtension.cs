@@ -21,7 +21,7 @@ public static class GameObjectExtension
         [2007186U] = "蛙变陷阱",
         [2009504U] = "獭獭陷阱"
     };
-    public static string GetDictionaryName(this GameObject obj)
+    public static string GetDictionaryName(this IGameObject obj)
     {
         if (NpcBaseMapping.TryGetValue(obj.DataId, out var value))
         {
@@ -30,14 +30,14 @@ public static class GameObjectExtension
         return obj.Name.TextValue;
     }
 
-    public static Vector2 Location2D(this GameObject obj) => new(obj.Position.X, obj.Position.Z);
+    public static Vector2 Location2D(this IGameObject obj) => new(obj.Position.X, obj.Position.Z);
 
-    public unsafe static uint ENpcIcon(this GameObject obj) => ((CSGameObject*)obj.Address)->NamePlateIconId;
+    public unsafe static uint ENpcIcon(this IGameObject obj) => ((CSGameObject*)obj.Address)->NamePlateIconId;
 
     // Deep Dungeon
-    public static bool IsTrap(this GameObject obj) => obj.DataId == 6388U && obj.Position != Vector3.Zero || obj.DataId >= 2007182U && obj.DataId <= 2007186U || obj.DataId == 2009504U || obj.DataId == 2013284U;
+    public static bool IsTrap(this IGameObject obj) => obj.DataId == 6388U && obj.Position != Vector3.Zero || obj.DataId >= 2007182U && obj.DataId <= 2007186U || obj.DataId == 2009504U || obj.DataId == 2013284U;
 
-    public static bool IsAccursedHoard(this GameObject obj) => obj.DataId == 2007542U || obj.DataId == 2007543U;
+    public static bool IsAccursedHoard(this IGameObject obj) => obj.DataId == 2007542U || obj.DataId == 2007543U;
 
-    public static bool IsSilverCoffer(this GameObject obj) => obj.DataId == 2007357U;
+    public static bool IsSilverCoffer(this IGameObject obj) => obj.DataId == 2007357U;
 }

@@ -3,31 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Dalamud.Game;
-using Dalamud.Game.ClientState;
-using Dalamud.Game.ClientState.Buddy;
-using Dalamud.Game.ClientState.Conditions;
-using Dalamud.Game.ClientState.Fates;
-using Dalamud.Game.ClientState.JobGauge;
-using Dalamud.Game.ClientState.Keys;
 using Dalamud.Game.ClientState.Objects;
-using Dalamud.Game.ClientState.Party;
 using Dalamud.Game.Command;
-using Dalamud.Game.Gui;
-using Dalamud.Game.Gui.Dtr;
-using Dalamud.Game.Gui.FlyText;
-using Dalamud.Game.Gui.PartyFinder;
-using Dalamud.Game.Gui.Toast;
-using Dalamud.Game.Libc;
-using Dalamud.Game.Network;
 using Dalamud.IoC;
-using Dalamud.Logging;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 
 
-namespace DeepDungeonRadar.Services
+namespace DeepDungeonRadar
 {
-    public class PluginService
+    public class Service
     {
         public static Plugin Plugin { get; private set; }
 
@@ -35,60 +20,58 @@ namespace DeepDungeonRadar.Services
 
         public static PluginAddressResolver Address { get; set; }
 
-        [PluginService] public static DalamudPluginInterface PluginInterface { get; private set; }
+        [PluginService] public static IDalamudPluginInterface PluginInterface { get; private set; }
 
-        [PluginService] public static BuddyList BuddyList { get; private set; }
+        [PluginService] public static IBuddyList BuddyList { get; private set; }
 
-        [PluginService] public static ChatGui ChatGui { get; private set; }
+        [PluginService] public static IChatGui ChatGui { get; private set; }
 
-        [PluginService] public static ChatHandlers ChatHandlers { get; private set; }
+        [PluginService] public static IClientState ClientState { get; private set; }
 
-        [PluginService] public static ClientState ClientState { get; private set; }
+        [PluginService] public static ICommandManager CommandManager { get; private set; }
 
-        [PluginService] public static CommandManager CommandManager { get; private set; }
-
-        [PluginService] public static Condition Condition { get; private set; }
+        [PluginService] public static ICondition Condition { get; private set; }
 
         [PluginService] public static IDataManager DataManager { get; private set; }
 
-        [PluginService] public static FateTable FateTable { get; private set; }
+        [PluginService] public static IFateTable FateTable { get; private set; }
 
-        [PluginService] public static FlyTextGui FlyTextGui { get; private set; }
+        [PluginService] public static IFlyTextGui FlyTextGui { get; private set; }
 
-        [PluginService] public static Framework Framework { get; private set; }
+        [PluginService] public static IFramework Framework { get; private set; }
 
-        [PluginService] public static GameGui GameGui { get; private set; }
+        [PluginService] public static IGameGui GameGui { get; private set; }
 
-        [PluginService] public static GameNetwork GameNetwork { get; private set; }
+        [PluginService] public static IGameNetwork GameNetwork { get; private set; }
 
-        [PluginService] public static JobGauges JobGauges { get; private set; }
+        [PluginService] public static IJobGauges JobGauges { get; private set; }
 
-        [PluginService] public static KeyState KeyState { get; private set; }
+        [PluginService] public static IKeyState KeyState { get; private set; }
 
-        [PluginService] public static LibcFunction LibcFunction { get; private set; }
+        [PluginService] public static IObjectTable ObjectTable { get; private set; }
 
-        [PluginService] public static ObjectTable ObjectTable { get; private set; }
+        [PluginService] public static IPartyFinderGui PartyFinderGui { get; private set; }
 
-        [PluginService] public static PartyFinderGui PartyFinderGui { get; private set; }
+        [PluginService] public static IPartyList PartyList { get; private set; }
 
-        [PluginService] public static PartyList PartyList { get; private set; }
+        [PluginService] public static ISigScanner SigScanner { get; private set; }
 
-        [PluginService] public static SigScanner SigScanner { get; private set; }
+        [PluginService] public static ITargetManager TargetManager { get; private set; }
 
-        [PluginService] public static TargetManager TargetManager { get; private set; }
+        [PluginService] public static IToastGui ToastGui { get; private set; }
 
-        [PluginService] public static ToastGui ToastGui { get; private set; }
+        [PluginService] public static IDtrBar DtrBar { get; private set; }
 
-        [PluginService] public static DtrBar DtrBar { get; private set; }
+        [PluginService] public static IPluginLog Log { get; private set; }
 
         private static PluginCommandManager<IDalamudPlugin> PluginCommandManager;
 
-        public PluginService(Plugin plugin, DalamudPluginInterface pluginInterface)
+        private Service(Plugin plugin, IDalamudPluginInterface pluginInterface)
         {
             Plugin = plugin;
             if (!pluginInterface.Inject(this))
             {
-                PluginLog.LogError("Failed loading DalamudApi!");
+                Log.Error("Failed loading DalamudApi!");
                 return;
             }
             Config ??= pluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
@@ -97,7 +80,7 @@ namespace DeepDungeonRadar.Services
             Address.Setup(SigScanner);
         }
 
-        public static void Initialize(Plugin plugin, DalamudPluginInterface pluginInterface) => _ = new PluginService(plugin, pluginInterface);
+        public static void Initialize(Plugin plugin, IDalamudPluginInterface pluginInterface) => _ = new Service(plugin, pluginInterface);
 
         public static void Dispose()
         {
@@ -126,18 +109,18 @@ namespace DeepDungeonRadar.Services
         private void AddCommandHandlers()
         {
             foreach (var (command, commandInfo) in pluginCommands)
-                PluginService.CommandManager.AddHandler(command, commandInfo);
+                Service.CommandManager.AddHandler(command, commandInfo);
         }
 
         private void RemoveCommandHandlers()
         {
             foreach (var (command, _) in pluginCommands)
-                PluginService.CommandManager.RemoveHandler(command);
+                Service.CommandManager.RemoveHandler(command);
         }
 
         private IEnumerable<(string, CommandInfo)> GetCommandInfoTuple(MethodInfo method)
         {
-            var handlerDelegate = (CommandInfo.HandlerDelegate)Delegate.CreateDelegate(typeof(CommandInfo.HandlerDelegate), plugin, method);
+            var handlerDelegate = (IReadOnlyCommandInfo.HandlerDelegate)Delegate.CreateDelegate(typeof(IReadOnlyCommandInfo.HandlerDelegate), plugin, method);
 
             var command = handlerDelegate.Method.GetCustomAttribute<CommandAttribute>();
             var aliases = handlerDelegate.Method.GetCustomAttribute<AliasesAttribute>();

@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using System.Numerics;
 using Dalamud.Interface;
-using DeepDungeonRadar.Services;
+using Dalamud.Interface.Utility;
+using DeepDungeonRadar.Misc;
 using ImGuiNET;
 using ImGuiScene;
 
@@ -55,7 +56,7 @@ internal static class ImguiUtil
         {
             var currentRotation = i * CircleSegmentFullRotation;
             var segmentWorld = center + (radius * currentRotation.ToNormalizedVector2()).ToVector3();
-            PluginService.GameGui.WorldToScreen(segmentWorld, out var segmentScreen);
+            Service.GameGui.WorldToScreen(segmentWorld, out var segmentScreen);
             drawList.PathLineTo(segmentScreen);
         }
 
@@ -67,7 +68,7 @@ internal static class ImguiUtil
 
     public static bool DrawRingWorld(this ImDrawListPtr drawList, Vector3 center, float radius, float thickness, uint color)
     {
-        PluginService.GameGui.WorldToScreen(center, out var _, out var inView);
+        Service.GameGui.WorldToScreen(center, out var _, out var inView);
         if (inView)
         {
             drawList.DrawCircleInternal(center, radius, thickness, color, false);
@@ -77,7 +78,7 @@ internal static class ImguiUtil
 
     public static bool DrawRingWorldWithText(this ImDrawListPtr drawList, Vector3 center, float radius, float thickness, uint color, string text, Vector2 offset = default)
     {
-        PluginService.GameGui.WorldToScreen(center, out var screenPos, out var inView);
+        Service.GameGui.WorldToScreen(center, out var screenPos, out var inView);
         if (inView)
         {
             drawList.DrawCircleInternal(center, radius, thickness, color, false);
@@ -121,7 +122,7 @@ internal static class ImguiUtil
         return result;
     }
 
-    public static void DrawText(this ImDrawListPtr drawList, Vector2 pos, string text, uint col, bool stroke, bool centerAlignX = true, uint strokecol = 4278190080U)
+    public static void DrawText(this ImDrawListPtr drawList, Vector2 pos, string text, uint color, bool stroke, bool centerAlignX = true, uint strokecolor = Color.Black)
     {
         if (centerAlignX)
         {
@@ -129,12 +130,12 @@ internal static class ImguiUtil
         }
         if (stroke)
         {
-            drawList.AddText(pos + new Vector2(-1f, -1f), strokecol, text);
-            drawList.AddText(pos + new Vector2(-1f, 1f), strokecol, text);
-            drawList.AddText(pos + new Vector2(1f, -1f), strokecol, text);
-            drawList.AddText(pos + new Vector2(1f, 1f), strokecol, text);
+            drawList.AddText(pos + new Vector2(-1f, -1f), strokecolor, text);
+            drawList.AddText(pos + new Vector2(-1f, 1f), strokecolor, text);
+            drawList.AddText(pos + new Vector2(1f, -1f), strokecolor, text);
+            drawList.AddText(pos + new Vector2(1f, 1f), strokecolor, text);
         }
-        drawList.AddText(pos, col, text);
+        drawList.AddText(pos, color, text);
     }
 
     public static void DrawTextWithBg(this ImDrawListPtr drawList, Vector2 pos, string text, uint col = 4294967295U, uint bgcol = 4278190080U, bool centerAlignX = true)
@@ -158,48 +159,6 @@ internal static class ImguiUtil
         drawList.AddRectFilled(pos, pos + vector, bgcol, 10f); // 圆角
         drawList.AddRect(pos, pos + vector, col, 10f);
         drawList.AddText(pos + new Vector2(ImGui.GetStyle().ItemSpacing.X / 2f + 0.5f, -0.5f), col, text);
-    }
-
-    public static void DrawArrow(this ImDrawListPtr drawList, Vector2 pos, float size, uint color, uint bgcolor, float rotation, float thickness, float outlinethickness)
-    {
-        drawList.AddPolyline(ref (new Vector2[]
-        {
-            pos + new Vector2(0f - size - outlinethickness / 2f, -0.5f * size - outlinethickness / 2f).Rotate(rotation),
-            pos + new Vector2(0f, 0.5f * size).Rotate(rotation),
-            pos + new Vector2(size + outlinethickness / 2f, -0.5f * size - outlinethickness / 2f).Rotate(rotation)
-        })[0], 3, bgcolor, ImDrawFlags.RoundCornersAll, thickness + outlinethickness);
-        drawList.DrawArrow(pos, size, color, rotation, thickness);
-    }
-
-    public static void DrawArrow(this ImDrawListPtr drawList, Vector2 pos, float size, uint color, float rotation, float thickness)
-    {
-        drawList.AddPolyline(ref (new Vector2[]
-        {
-            pos + new Vector2(0f - size, -0.5f * size).Rotate(rotation),
-            pos + new Vector2(0f, 0.5f * size).Rotate(rotation),
-            pos + new Vector2(size, -0.5f * size).Rotate(rotation)
-        })[0], 3, color, ImDrawFlags.RoundCornersAll, thickness);
-    }
-
-    public static void DrawArrow(this ImDrawListPtr drawList, Vector2 pos, float size, uint color, uint bgcolor, Vector2 rotation, float thickness, float outlinethickness)
-    {
-        drawList.AddPolyline(ref (new Vector2[]
-        {
-            pos + new Vector2(0f - size - outlinethickness / 2f, -0.4f * size - outlinethickness / 2f).Rotate(rotation),
-            pos + new Vector2(0f, 0.6f * size).Rotate(rotation),
-            pos + new Vector2(size + outlinethickness / 2f, -0.4f * size - outlinethickness / 2f).Rotate(rotation)
-        })[0], 3, bgcolor, ImDrawFlags.RoundCornersAll, thickness + outlinethickness);
-        drawList.DrawArrow(pos, size, color, rotation, thickness);
-    }
-
-    public static void DrawArrow(this ImDrawListPtr drawList, Vector2 pos, float size, uint color, Vector2 rotation, float thickness)
-    {
-        drawList.AddPolyline(ref (new Vector2[]
-        {
-            pos + new Vector2(0f - size, -0.4f * size).Rotate(rotation),
-            pos + new Vector2(0f, 0.6f * size).Rotate(rotation),
-            pos + new Vector2(size, -0.4f * size).Rotate(rotation)
-        })[0], 3, color, ImDrawFlags.RoundCornersAll, thickness);
     }
 
     public static void DrawTrangle(this ImDrawListPtr drawList, Vector2 pos, float size, uint color, Vector2 rotation, bool filled = true)
@@ -229,12 +188,12 @@ internal static class ImguiUtil
     {
         if (!string.IsNullOrWhiteSpace(str))
         {
-            drawList.DrawText(pos, str, fgcolor, PluginService.Config.RadarTextStroke, true, bgcolor);
+            drawList.DrawText(pos, str, fgcolor, Service.Config.RadarTextStroke, true, bgcolor);
         }
-        drawList.AddCircleFilled(pos, PluginService.Config.RadarObjectDotSize, fgcolor);
-        if (PluginService.Config.RadarObjectDotStroke != 0f)
+        drawList.AddCircleFilled(pos, Service.Config.RadarObjectDotSize, fgcolor);
+        if (Service.Config.RadarObjectDotStroke != 0f)
         {
-            drawList.AddCircle(pos, PluginService.Config.RadarObjectDotSize, bgcolor, 0, PluginService.Config.RadarObjectDotStroke);
+            drawList.AddCircle(pos, Service.Config.RadarObjectDotSize, bgcolor, 0, Service.Config.RadarObjectDotStroke);
         }
     }
 

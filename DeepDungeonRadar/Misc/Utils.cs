@@ -6,13 +6,12 @@ using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
 using DeepDungeonRadar.Enums;
-using DeepDungeonRadar.Services;
 using ImGuiScene;
 using Newtonsoft.Json;
 
-namespace DeepDungeonRadar;
+namespace DeepDungeonRadar.Misc;
 
-internal static class Util
+internal static class Utils
 {
     public static Vector2 GetSize(this TextureWrap textureWrap)
     {
@@ -56,14 +55,14 @@ internal static class Util
     {
         var rotation = rad.ToNormalizedVector2();
         var diff = vin - pivot;
-        return pivot + new Vector2(rotation.Y * diff.X + rotation.X * diff.Y, rotation.Y * diff.Y - rotation.X * diff.X);
+        return pivot + new Vector2(rotation.Y * diff.X - rotation.X * diff.Y, rotation.Y * diff.Y + rotation.X * diff.X);
     }
 
     public static Vector2 Rotate(this Vector2 vin, Vector2 rotation, Vector2 pivot = default)
     {
         rotation = rotation.Normalize();
         var diff = vin - pivot;
-        return pivot + new Vector2(rotation.Y * diff.X + rotation.X * diff.Y, rotation.Y * diff.Y - rotation.X * diff.X);
+        return pivot + new Vector2(rotation.Y * diff.X - rotation.X * diff.Y, rotation.Y * diff.Y + rotation.X * diff.X);
     }
 
     public static float ToArc(this Vector2 vin) => MathF.Sin(vin.X);
@@ -89,7 +88,7 @@ internal static class Util
 
     public static string GetRelative(this nint i)
     {
-        return (i.ToInt64() - PluginService.SigScanner.Module.BaseAddress.ToInt64()).ToString("X");
+        return (i.ToInt64() - Service.SigScanner.Module.BaseAddress.ToInt64()).ToString("X");
     }
 
     public static string ToCompressedString<T>(this T obj)
@@ -147,33 +146,64 @@ internal static class Util
         }
         return @string;
     }
-
-    public static DeepDungeonBg TerritoryToBg(ushort territory)
+    public static Direction GetDirection(Vector2 origin, Vector3 target)
     {
-        return territory switch
+        var diff = new Vector2(target.X - origin.X, target.Z - origin.Y);
+        var valueRadian = MathF.Atan2(diff.Y, diff.X);
+        if (-112.5f / 180f * MathF.PI <= valueRadian && valueRadian <= -67.5f / 180f * MathF.PI)
+            return Direction.正北;
+        if (-67.5f / 180f * MathF.PI <= valueRadian && valueRadian <= -22.5f / 180f * MathF.PI)
+            return Direction.东北;
+        if (-22.5f / 180f * MathF.PI <= valueRadian && valueRadian <= 22.5f / 180f * MathF.PI)
+            return Direction.正东;
+        if (22.5f / 180f * MathF.PI <= valueRadian && valueRadian <= 67.5f / 180f * MathF.PI)
+            return Direction.东南;
+        if (67.5f / 180f * MathF.PI <= valueRadian && valueRadian <= 112.5f / 180f * MathF.PI)
+            return Direction.正南;
+        if (112.5f / 180f * MathF.PI <= valueRadian && valueRadian <= 157.5f / 180f * MathF.PI)
+            return Direction.西南;
+        if (157.5f / 180f * MathF.PI <= valueRadian || valueRadian <= -157.5f / 180f * MathF.PI)
+            return Direction.正西;
+        if (-157.5f / 180f * MathF.PI <= valueRadian && valueRadian <= -112.5f / 180f * MathF.PI)
+            return Direction.西北;
+        return Direction.None;
+    }
+
+    public static Vector2[] GenerateBentLineWithWidth(Vector2 start, Vector2 end, float halfWidth, bool horizontal)
+    {
+        Vector2 endpointDirection = horizontal ? new(0, -1) : new(1, 0);
+        var endpointOffset = halfWidth * endpointDirection;
+        var edge1start = start + endpointOffset;
+        var edge1end = end + endpointOffset;
+        var edge2start = start - endpointOffset;
+        var edge2end = end - endpointOffset;
+        if (horizontal && (MathF.Abs(start.Y - end.Y) < 1f || MathF.Abs(start.X - end.X) <= 2 * halfWidth)
+            || !horizontal && (MathF.Abs(start.X - end.X) < 1f || MathF.Abs(start.Y - end.Y) <= 2 * halfWidth))
         {
-            561 => DeepDungeonBg.f1c1,
-            562 => DeepDungeonBg.f1c2,
-            563 => DeepDungeonBg.f1c3,
-            564 or 565 => DeepDungeonBg.f1c4,
-            593 or 594 or 595 => DeepDungeonBg.f1c5,
-            596 or 597 or 598 => DeepDungeonBg.f1c6,
-            599 or 600 => DeepDungeonBg.f1c8,
-            601 or 602 => DeepDungeonBg.f1c9,
-            603 or 604 or 605 or 606 or 607 => DeepDungeonBg.f1c7,
-            770 => DeepDungeonBg.e3c1,
-            771 => DeepDungeonBg.e3c2,
-            772 or 782 => DeepDungeonBg.e3c3,
-            773 or 783 => DeepDungeonBg.e3c4,
-            774 or 784 => DeepDungeonBg.e3c5,
-            775 or 785 => DeepDungeonBg.e3c6,
-            1099 => DeepDungeonBg.l5c1,
-            1100 => DeepDungeonBg.l5c2,
-            1101 or 1102 => DeepDungeonBg.l5c3,
-            1103 or 1104 => DeepDungeonBg.l5c4,
-            1105 or 1106 => DeepDungeonBg.l5c5,
-            1107 or 1108 => DeepDungeonBg.l5c6,
-            _ => DeepDungeonBg.notInKnownDeepDungeon,
-        };
+            return [edge1start, edge1end, edge2end, edge2start];
+        }
+
+        Vector2 firstBend, secondBend, bendDirection, bendOffset;
+        if (horizontal)
+        {
+            firstBend = new((start.X + end.X) / 2, start.Y);  // 第一个拐点
+            secondBend = new((start.X + end.X) / 2, end.Y);   // 第二个拐点
+            bendDirection = new(start.Y < end.Y ? 1 : -1, -1);
+        }
+        else
+        {
+            firstBend = new(start.X, (start.Y + end.Y) / 2);  // 第一个拐点
+            secondBend = new(end.X, (start.Y + end.Y) / 2);   // 第二个拐点
+            bendDirection = new(1, start.X < end.X ? -1 : 1);
+        }
+        bendOffset = halfWidth * bendDirection;
+        return [edge1start,
+            firstBend + bendOffset,
+            secondBend + bendOffset,
+            edge1end, 
+            edge2end,
+            secondBend - bendOffset,
+            firstBend - bendOffset,
+            edge2start];
     }
 }

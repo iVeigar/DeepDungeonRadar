@@ -1,6 +1,7 @@
 ﻿using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Dalamud.Utility;
+using DeepDungeonRadar.Maps;
 using DeepDungeonRadar.Services;
 using DeepDungeonRadar.Windows;
 
@@ -9,23 +10,23 @@ namespace DeepDungeonRadar;
 public sealed class Plugin : IDalamudPlugin
 {
     public string Name => "DeepDungeonRadar";
+    public readonly WindowSystem WindowSystem = new("DeepDungeonRadar");
     private readonly RadarWindow radarWindow;
     private readonly ConfigWindow configWindow;
-    private readonly TnTService tntService;
-    public readonly WindowSystem WindowSystem = new("DeepDungeonRadar");
-
-    public Plugin(DalamudPluginInterface pi)
+    private readonly DeepDungeonService deepDungeonService;
+    private readonly MapDrawer mapDrawer;
+    public Plugin(IDalamudPluginInterface pi)
     {
-        PluginService.Initialize(this, pi);
-
-        radarWindow = new();
+        Service.Initialize(this, pi);
+        mapDrawer = new();
+        deepDungeonService = new(mapDrawer);
+        radarWindow = new(deepDungeonService, mapDrawer);
         configWindow = new();
-        tntService = new();
         WindowSystem.AddWindow(configWindow);
         WindowSystem.AddWindow(radarWindow);
 
-        PluginService.PluginInterface.UiBuilder.Draw += DrawUI;
-        PluginService.PluginInterface.UiBuilder.OpenConfigUi += ShowConfigWindow;
+        Service.PluginInterface.UiBuilder.Draw += DrawUI;
+        Service.PluginInterface.UiBuilder.OpenConfigUi += ShowConfigWindow;
     }
 
     [Command("/ddr")]
@@ -34,23 +35,27 @@ public sealed class Plugin : IDalamudPlugin
     {
         if (args.IsNullOrWhitespace() || args == "config")
             ShowConfigWindow();
-        else if(args == "toggle")
+        else if (args == "toggle")
         {
-            PluginService.Config.RadarEnabled = !PluginService.Config.RadarEnabled;
-            PluginService.Config.Save();
-            PluginService.ChatGui.Print("[DeepDungeonRadar] Map " + (PluginService.Config.RadarEnabled ? "Enabled" : "Disabled") + ".");
+            Service.Config.RadarEnabled ^= true;
+            Service.Config.Save();
+            Service.ChatGui.Print("[DeepDungeonRadar] Map " + (Service.Config.RadarEnabled ? "Enabled" : "Disabled") + ".");
+        }
+        else if (args == "cheat")
+        {
+            mapDrawer.Cheat();
         }
     }
 
     public void Dispose()
     {
         WindowSystem.RemoveAllWindows();
-        PluginService.PluginInterface.UiBuilder.Draw -= DrawUI;
-        PluginService.PluginInterface.UiBuilder.OpenConfigUi -= ShowConfigWindow;
+        Service.PluginInterface.UiBuilder.Draw -= DrawUI;
+        Service.PluginInterface.UiBuilder.OpenConfigUi -= ShowConfigWindow;
         configWindow.Dispose();
         radarWindow.Dispose();
-        tntService.Dispose();
-        PluginService.Dispose();
+        deepDungeonService.Dispose();
+        Service.Dispose();
     }
     private void DrawUI()
     {
