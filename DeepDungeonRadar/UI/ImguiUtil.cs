@@ -4,7 +4,7 @@ using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility;
 using DeepDungeonRadar.Misc;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using ImGuiScene;
 
 namespace DeepDungeonRadar.UI;
@@ -195,12 +195,6 @@ internal static class ImguiUtil
         {
             drawList.AddCircle(pos, Service.Config.RadarObjectDotSize, bgcolor, 0, Service.Config.RadarObjectDotStroke);
         }
-    }
-
-    public static void DrawIcon(this ImDrawListPtr drawlist, Vector2 pos, TextureWrap icon, float size = 1f)
-    {
-        _ = icon.GetSize() * size;
-        drawlist.AddImage(icon.ImGuiHandle, pos, pos);
     }
 
     public static Vector2 ToRadarWindowPos(this Vector3 vin, Vector3 pivotWorldPos, Vector2 pivotWindowPos, float zoom, float rotation)

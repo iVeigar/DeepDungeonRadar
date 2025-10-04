@@ -100,7 +100,7 @@ public static class MapData
         // float: width or diameter
         return bg switch
         {
-            DeepDungeonBg.f1c5 => (1, 40f), // PotD 51-80
+            DeepDungeonBg.f1c2 or DeepDungeonBg.f1c5 or DeepDungeonBg.f1c6 or DeepDungeonBg.f1c8 or DeepDungeonBg.f1c9 => (1, 40f), // PotD 11-20, PotD 51-130
             DeepDungeonBg.f1c7 => (1, 34f), // PotD 151-200
             DeepDungeonBg.e3c1 or DeepDungeonBg.e3c2 or DeepDungeonBg.e3c3 or DeepDungeonBg.e3c4 or DeepDungeonBg.e3c5 or DeepDungeonBg.e3c6 => (0, 35f), // HoH
             DeepDungeonBg.l5c1 or DeepDungeonBg.l5c2 => (1, 32f), // EO 1-20
@@ -110,6 +110,7 @@ public static class MapData
         };
     }
 
+    // 只是各房间中心的坐标，若干组楼层会复用同一套坐标，下划线前的部分仅代表该组坐标是使用了哪里的地形数据编写的
     private static readonly List<Vector2?> PotD_1 = new()
     {
         #region leftbottom

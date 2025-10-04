@@ -1,14 +1,14 @@
 ﻿using System.Collections.Generic;
 
-namespace DeepDungeonRadar.util;
+namespace DeepDungeonRadar.Misc;
 
 public static class DataIds
 {
     /////////////////////////////////////////////////////////////////////////////////////////////////////
     // Network IDs
-    public const uint SystemLogPomanderUsed = 0x1C56;
-    public const uint SystemLogDutyEnded = 0x5FE;
-    public const uint SystemLogTransferenceInitiated = 0x1C50;
+    public const uint SystemLogPomanderUsed = 7254;
+    public const uint SystemLogDutyEnded = 1534;
+    public const uint SystemLogTransferenceInitiated = 7248;
     public const uint ActorControlSelfDirectorUpdate = 0x6D;
     public const int DirectorUpdateDutyCommenced = 0x1;
     public const int DirectorUpdateDutyRecommenced = 0x6;
@@ -52,7 +52,7 @@ public static class DataIds
 
     public static readonly HashSet<uint> MimicIDs =
     [
-        2566, 6362, 6363, 7392, 7393, 7394, 5832, 15997, 15998, 15999, 16002, 16003
+        2566, 6362, 6363, 7392, 7393, 7394, 5832, 5834, 5835, 15997, 15998, 15999, 16002, 16003
     ];
 
     public static readonly HashSet<uint> BronzeChestIDs =

@@ -1,33 +1,64 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using Dalamud.Game;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.Network;
+using Dalamud.Game.Text;
+using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Hooking;
+using Dalamud.Plugin.Services;
 using DeepDungeonRadar.Maps;
-using DeepDungeonRadar.util;
+using DeepDungeonRadar.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using static DeepDungeonRadar.util.DeepDungeonUtil;
+using FFXIVOpcodes.CN;
+using static DeepDungeonRadar.Misc.DeepDungeonUtil;
 
 namespace DeepDungeonRadar.Services;
 
-public partial class DeepDungeonService : IDisposable
+public sealed partial class DeepDungeonService : IDisposable
 {
     [GeneratedRegex("\\d+")]
-    private static partial Regex FloorNumber();
+    private static partial Regex AddonFloorNumber();
+
+    [GeneratedRegex(@"(?:地下|第)(\d+)层")]
+    private static partial Regex SystemLogFloorNumber();
+
+    private const string ActorControlSig = "E8 ?? ?? ?? ?? 0F B7 0B 83 E9 64";
+    private delegate void ActorControlSelfDelegate(uint category, uint eventId, uint param1, uint param2, uint param3, uint param4, uint param5, uint param6, ulong targetId, byte param7);
+    private Hook<ActorControlSelfDelegate>? actorControlSelfHook;
+
+
+    private const string SystemLogSig = "E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 0F B6 47 28";
+    private Hook<SystemLogMessageDelegate>? systemLogMessageHook;
+    private unsafe delegate void SystemLogMessageDelegate(uint entityId, uint logMessageId, int* args, byte argCount);
+
+
     private readonly Configuration config = Service.Config;
     private readonly MapDrawer mapDrawer;
-    private bool FloorVerified = false;
-    private int _currentFloor = 0;
+    private int startFloor = 0;
+    private int systemLogFloor = 0;
+    private int currentFloor = 0;
+    private long lastCheckAt = Environment.TickCount64;
     private unsafe int CurrentFloor
     {
         get
         {
-            if (!FloorVerified)
-                VerifyFloorNumber();
-            return _currentFloor;
+            if (Environment.TickCount64 - lastCheckAt > 500)
+            {
+                lastCheckAt = Environment.TickCount64;
+                int floor = systemLogFloor != 0 ? systemLogFloor : (TryGetAddonFloorNumber(out var addonFloor) ? addonFloor : startFloor);
+                if (floor > currentFloor)
+                {
+                    Service.Log.Debug($"Entered a new floor: #{floor}");
+                    currentFloor = floor;
+                    FloorTransfer = false;
+                }
+            }
+            return currentFloor;
         }
     }
-    private bool _floorTransfer = true; 
+    private bool _floorTransfer = true;
     public bool FloorTransfer
     {
         get => _floorTransfer;
@@ -35,18 +66,11 @@ public partial class DeepDungeonService : IDisposable
         {
             if (_floorTransfer != value)
             {
-                _floorTransfer = value;
                 if (value)
-                {
-                    Service.Log.Debug($"Teleporting..");
                     mapDrawer.ResetColliderBox();
-                }
                 else
-                {
-                    _currentFloor++;
                     mapDrawer.Update();
-                    Service.Log.Debug($"Entered new floor #{CurrentFloor}{(FloorVerified ? "" : " (not verified)")}");
-                }
+                _floorTransfer = value;
             }
         }
     }
@@ -56,64 +80,91 @@ public partial class DeepDungeonService : IDisposable
     public DeepDungeonService(MapDrawer mapDrawer)
     {
         this.mapDrawer = mapDrawer;
-        Service.GameNetwork.NetworkMessage += NetworkMessage;
-        OnConditionChange(ConditionFlag.BetweenAreas, false); // manually trigger to initialize
-        Service.Condition.ConditionChange += OnConditionChange;
-    }
-
-    private unsafe void VerifyFloorNumber()
-    {
-        var a = Service.GameGui.GetAddonByName("DeepDungeonMap", 1);
-        if (a == IntPtr.Zero)
-            return;
-        var addon = (AtkUnitBase*)a;
-        var floorText = addon->GetNodeById(17)->ChildNode->PrevSiblingNode->GetAsAtkTextNode()->NodeText.ToString();
-        var floor = int.Parse(FloorNumber().Match(floorText).Value);
-        if (_currentFloor != floor)
+        unsafe
         {
-            Service.Log.Debug($"Adjusted floor number to #{floor}");
-            _currentFloor = floor;
+            var actorControlSelfPtr = Service.SigScanner.ScanText(ActorControlSig);
+            actorControlSelfHook =
+                Service.GameInteropProvider.HookFromAddress<ActorControlSelfDelegate>(actorControlSelfPtr, ActorControlSelf);
+            actorControlSelfHook.Enable();
+
+            var systemLogPtr = Service.SigScanner.ScanText(SystemLogSig);
+            systemLogMessageHook =
+                Service.GameInteropProvider.HookFromAddress<SystemLogMessageDelegate>(systemLogPtr, SystemLogMessage);
+            systemLogMessageHook.Enable();
         }
-        FloorVerified = true;
+
+        Service.Condition.ConditionChange += OnConditionChange;
+        Service.ChatGui.CheckMessageHandled += OnChatMessage;
+    }
+    public void Dispose()
+    {
+        Service.Condition.ConditionChange -= OnConditionChange;
+        Service.ChatGui.CheckMessageHandled -= OnChatMessage;
+        actorControlSelfHook?.Disable();
+        actorControlSelfHook?.Dispose();
+        systemLogMessageHook?.Disable();
+        systemLogMessageHook?.Dispose();
     }
 
     public void OnConditionChange(ConditionFlag flag, bool value)
     {
-        switch (flag)
+        if (flag == ConditionFlag.InDeepDungeon && !value)
         {
-            case ConditionFlag.InDeepDungeon:
-                if (!value)
-                {
-                    Service.Log.Debug($"Exited dungeon.");
-                    mapDrawer.ClearMapData();
-                    mapDrawer.ClearFloorDetailData();
-                    _currentFloor = 0;
-                    _floorTransfer = true; // don't want to trigger set action of property FloorTransfer
-                    FloorVerified = false;
-                }
-                break;
-            case ConditionFlag.BetweenAreas:
-                if (!value && Service.Condition[ConditionFlag.InDeepDungeon])
-                {
-                    FloorTransfer = false;
-                }
-                break;
+            Service.Log.Debug($"Exited dungeon.");
+            mapDrawer.ClearMapData();
+            mapDrawer.ClearFloorDetailData();
+            startFloor = 0;
+            systemLogFloor = 0;
+            currentFloor = 0;
+            mapDrawer.Cheated = false;
+            _floorTransfer = true; // don't want to trigger set action of property FloorTransfer
         }
     }
 
-    public void Dispose()
+    private void OnChatMessage(XivChatType type, int timestamp, ref SeString sender, ref SeString seMessage, ref bool isHandled)
     {
-        Service.Condition.ConditionChange -= OnConditionChange;
-        Service.GameNetwork.NetworkMessage -= NetworkMessage;
+        if (((ushort)type & 0x7f) != (ushort)XivChatType.SystemMessage)
+            return;
+
+        var match = SystemLogFloorNumber().Match(seMessage.ToString());
+        if (match.Success)
+            systemLogFloor = int.Parse(match.Groups[1].Value);
+    }
+    private void ActorControlSelf(uint category, uint eventId, uint param1, uint contentId, uint param3, uint param4, uint param5, uint param6, ulong targetId, byte param7)
+    {
+        actorControlSelfHook!.Original(category, eventId, param1, contentId, param3, param4, param5, param6, targetId, param7);
+
+        if (eventId == DataIds.ActorControlSelfDirectorUpdate && startFloor == 0 && DeepDungeonContentInfo.ContentInfo.TryGetValue((int)contentId, out var info))
+            startFloor = info.StartFloor;
     }
 
-    private void NetworkMessage(IntPtr dataPtr, ushort opCode, uint sourceActorId, uint targetActorId, NetworkMessageDirection direction)
+    //private void OnActorControlSelf(IntPtr dataPtr)
+    //{
+    //    // OnDirectorUpdate
+    //    if (Marshal.ReadByte(dataPtr) == DataIds.ActorControlSelfDirectorUpdate)
+    //    {
+    //        switch (Marshal.ReadByte(dataPtr, 8))
+    //        {
+    //            // OnDutyCommenced
+    //            case DataIds.DirectorUpdateDutyCommenced:
+    //                var contentId = ReadNumber(dataPtr, 4, 2);
+    //                if (startFloor == 0 && DeepDungeonContentInfo.ContentInfo.TryGetValue(contentId, out var info))
+    //                    startFloor = info.StartFloor;
+    //                break;
+    //        }
+    //    }
+    //}
+
+    private unsafe void SystemLogMessage(uint entityId, uint logId, int* args, byte argCount)
     {
-        if (direction == NetworkMessageDirection.ZoneDown && opCode == (ushort)ServerZoneIpcType.SystemLogMessage)
+        systemLogMessageHook!.Original(entityId, logId, args, argCount);
+
+        if (Service.Condition[ConditionFlag.InDeepDungeon])
         {
-            var logId = (uint)ReadNumber(dataPtr, 4, 4);
-            if (Service.Condition[ConditionFlag.InDeepDungeon] && logId == DataIds.SystemLogTransferenceInitiated)
+            if (logId == DataIds.SystemLogTransferenceInitiated)
+            {
                 FloorTransfer = true;
+            }
         }
     }
 
@@ -122,5 +173,18 @@ public partial class DeepDungeonService : IDisposable
         var bytes = new byte[4];
         Marshal.Copy(dataPtr + offset, bytes, 0, size);
         return BitConverter.ToInt32(bytes);
+    }
+
+    private unsafe bool TryGetAddonFloorNumber(out int addonFloor)
+    {
+        var addon = Service.GameGui.GetAddonByName("DeepDungeonMap", 1);
+        if (addon == IntPtr.Zero)
+        {
+            addonFloor = 0;
+            return false;
+        }
+        var floorText = ((AtkUnitBase*)addon.Address)->GetNodeById(26)->ChildNode->PrevSiblingNode->GetAsAtkTextNode()->NodeText.ToString();
+        addonFloor = int.Parse(AddonFloorNumber().Match(floorText).Value);
+        return true;
     }
 }

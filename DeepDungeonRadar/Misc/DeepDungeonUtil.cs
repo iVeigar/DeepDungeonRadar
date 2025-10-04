@@ -3,7 +3,7 @@ using System.Numerics;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 
-namespace DeepDungeonRadar.util;
+namespace DeepDungeonRadar.Misc;
 
 [SuppressMessage("ReSharper", "PatternIsRedundant")] // RSRP-492231
 [SuppressMessage("ReSharper", "InconsistentNaming")]

@@ -5,5 +5,5 @@
     "Description": "显示深层迷宫地图轮廓并展示游戏实体的位置。\nDisplays deep dungeon map and objects location on screen.",
     "InternalName": "Deep Dungeon Radar",
     "ApplicableVersion": "any",
-    "DalamudApiLevel":  10
+    "DalamudApiLevel":  13
 }

@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
@@ -13,8 +15,7 @@ using DeepDungeonRadar.Maps;
 using DeepDungeonRadar.Misc;
 using DeepDungeonRadar.Services;
 using DeepDungeonRadar.UI;
-using ImGuiNET;
-using static DeepDungeonRadar.util.DeepDungeonUtil;
+using static DeepDungeonRadar.Misc.DeepDungeonUtil;
 namespace DeepDungeonRadar.Windows;
 
 public sealed class RadarWindow(DeepDungeonService dds, MapDrawer md) : Window("Deep Dungeon Radar Show", ImGuiWindowFlags.None), IDisposable
@@ -46,7 +47,7 @@ public sealed class RadarWindow(DeepDungeonService dds, MapDrawer md) : Window("
 
     public override void PreOpenCheck()
     {
-        IsOpen = config.RadarEnabled && Service.Condition[ConditionFlag.InDeepDungeon] && !deepDungeonService.FloorTransfer && deepDungeonService.HasRadar;
+        IsOpen = config.RadarEnabled && Service.Condition[ConditionFlag.InDeepDungeon] && deepDungeonService.HasRadar && !deepDungeonService.FloorTransfer;
         Flags = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.NoBackground;
         if (config.RadarClickThrough)
         {
@@ -145,11 +146,19 @@ public sealed class RadarWindow(DeepDungeonService dds, MapDrawer md) : Window("
 
     private unsafe void DrawRadar()
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static float AdjustRotationToHRotation(float angle)
+        {
+            if (angle > 0) angle -= (float)Math.PI;
+            else if (angle < 0) angle += (float)Math.PI;
+            return angle;
+        }
+
         var windowSize = ImGui.GetWindowSize();
         var windowLeftTop = ImGui.GetWindowPos();
         var windowCenter = windowLeftTop + windowSize / 2;
         var zoom = windowSize.X * UvZoom / 256f;
-        var rotation = config.RadarOrientationFixed ? 0 : Service.Address.HRotation;
+        var rotation = config.RadarOrientationFixed ? 0 : AdjustRotationToHRotation(Service.ClientState.LocalPlayer.Rotation);
         var windowDrawList = ImGui.GetWindowDrawList();
         windowDrawList.ChannelsSplit(3);
 
@@ -169,11 +178,11 @@ public sealed class RadarWindow(DeepDungeonService dds, MapDrawer md) : Window("
             windowDrawList.DrawMapTextDot(windowCenter, config.RadarDetailLevel > 0 ? "我" : null, Color.Green, Color.Black);
             if (config.RadarShowAssistCircle)
             {
-                var meRotation = config.RadarOrientationFixed ? -Service.Address.HRotation : 0f;
+                var meRotation = config.RadarOrientationFixed ? -AdjustRotationToHRotation(Service.ClientState.LocalPlayer.Rotation) : 0f;
                 windowDrawList.PathArcTo(windowCenter, zoom * 25f, meRotation - MathF.PI * 0.75f, meRotation - MathF.PI * 0.25f, 24);
                 windowDrawList.PathLineTo(windowCenter);
                 windowDrawList.PathStroke(Color.Green, ImDrawFlags.Closed, 1f);
-                windowDrawList.AddCircle(windowCenter, zoom * 128f, Color.TransGrey, 100);
+                windowDrawList.AddCircle(windowCenter, zoom * 105f, Color.TransGrey, 100);
             }
         }
 

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace DeepDungeonRadar.util;
+namespace DeepDungeonRadar.Misc;
 
 public class DeepDungeonContentInfo
 {

@@ -2,7 +2,7 @@
 using Dalamud.Interface.Windowing;
 using DeepDungeonRadar.Enums;
 using DeepDungeonRadar.UI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 
 namespace DeepDungeonRadar.Windows;
 

@@ -13,10 +13,6 @@ namespace DeepDungeonRadar.Misc;
 
 internal static class Utils
 {
-    public static Vector2 GetSize(this TextureWrap textureWrap)
-    {
-        return new Vector2(textureWrap.Width, textureWrap.Height);
-    }
 
     public static Vector2 ToVector2(this Vector3 v) => new(v.X, v.Z);
 
@@ -171,14 +167,15 @@ internal static class Utils
 
     public static Vector2[] GenerateBentLineWithWidth(Vector2 start, Vector2 end, float halfWidth, bool horizontal)
     {
+        var tolerance = 2f;
         Vector2 endpointDirection = horizontal ? new(0, -1) : new(1, 0);
         var endpointOffset = halfWidth * endpointDirection;
         var edge1start = start + endpointOffset;
         var edge1end = end + endpointOffset;
         var edge2start = start - endpointOffset;
         var edge2end = end - endpointOffset;
-        if (horizontal && (MathF.Abs(start.Y - end.Y) < 1f || MathF.Abs(start.X - end.X) <= 2 * halfWidth)
-            || !horizontal && (MathF.Abs(start.X - end.X) < 1f || MathF.Abs(start.Y - end.Y) <= 2 * halfWidth))
+        if (horizontal && (MathF.Abs(start.Y - end.Y) < tolerance || MathF.Abs(start.X - end.X) <= 2 * halfWidth)
+            || !horizontal && (MathF.Abs(start.X - end.X) < tolerance || MathF.Abs(start.Y - end.Y) <= 2 * halfWidth))
         {
             return [edge1start, edge1end, edge2end, edge2start];
         }

@@ -9,8 +9,8 @@ using DeepDungeonRadar.Misc;
 using DeepDungeonRadar.UI;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Common.Component.BGCollision;
-using ImGuiNET;
-using static DeepDungeonRadar.util.DeepDungeonUtil;
+using Dalamud.Bindings.ImGui;
+using static DeepDungeonRadar.Misc.DeepDungeonUtil;
 namespace DeepDungeonRadar.Maps;
 
 public class MapDrawer()
@@ -18,16 +18,16 @@ public class MapDrawer()
     private const float halfCorridorWidth = 5f;
     private const float thickness = 1.5f;
     private (List<Vector2?>, (int, float)) CurrentMap = default;
-    private Dictionary<int, Vector2[]> RoomVerticesCache = [];
+    private readonly Dictionary<int, Vector2[]> RoomVerticesCache = [];
     private List<Vector2?> Rooms => CurrentMap.Item1;
     private int Shape => CurrentMap.Item2.Item1;
     private float Width => CurrentMap.Item2.Item2;
 
     private Dictionary<Vector3, bool> WallStatus = [];
     private Dictionary<int, Dictionary<Direction, bool>> RoomDirectionStatus = [];
-    private Dictionary<(int Room1, int Room2), (bool Horizontal, bool Blocked)> CorridorStatus = [];
-    private Dictionary<(int Room1, int Room2), Vector2[]> CorridorVerticesCache = [];
-    private HashSet<int> ActiveRooms = [];
+    private readonly Dictionary<(int Room1, int Room2), (bool Horizontal, bool Blocked)> CorridorStatus = [];
+    private readonly Dictionary<(int Room1, int Room2), Vector2[]> CorridorVerticesCache = [];
+    private readonly HashSet<int> ActiveRooms = [];
 
 
     public unsafe void DebugDraw()
@@ -154,7 +154,7 @@ public class MapDrawer()
         UpdateActiveRooms();
     }
 
-    private bool Cheated = false;
+    internal bool Cheated = false;
     public unsafe void ResetColliderBox()
     {
         if (!Cheated) return;
@@ -198,19 +198,25 @@ public class MapDrawer()
 
     private bool LoadMap(bool force = false)
     {
-        if (!force && Rooms != null || MapData.TryGetMapData(MapId, out CurrentMap))
+        if (!force && Rooms != null)
         {
+            return true;
+        }
+        else if (MapData.TryGetMapData(MapId, out CurrentMap))
+        {
+            Service.Log.Debug($"Map Loaded, territory id: {MapId}");
             return true;
         }
         else
         {
-            Service.Log.Warning($"map not found, territory id: {MapId}");
+            Service.Log.Warning($"Map not found, territory id: {MapId}");
             return false;
         }
     }
 
     private void CalcRoomVertices()
     {
+        Service.Log.Debug("CalcRoomVertices start");
         var halfRoomWidth = Width / 2;
         // clockwise
         List<Vector2> vertices = [
@@ -234,12 +240,13 @@ public class MapDrawer()
         {
             if (Rooms[i] == null) continue;
             var center = Rooms[i].Value;
-            RoomVerticesCache.TryAdd(i, vertices.Select(p => p + center).ToArray());
+            RoomVerticesCache.TryAdd(i, [.. vertices.Select(p => p + center)]);
         }
     }
 
     private void CalcCorridorVertices()
     {
+        Service.Log.Debug("CalcCorridorVertices start");
         var halfRoomWidth = Width / 2;
         foreach (var ((room1, room2), (horizontal, _)) in CorridorStatus)
         {
@@ -265,7 +272,10 @@ public class MapDrawer()
                 walls.Add((((ColliderBox*)coll)->World.Row3, (coll->VisibilityFlags & 1) != 0));
             }
         }
-
+        if (walls.Count == 0)
+        {
+            Service.Log.Warning("UpdateWallStatus: no real wall!");
+        }
         // virtual walls on leaf rooms
         WallStatus = walls.Concat(MapData.LeafRooms.Select(i =>
         {
@@ -306,7 +316,7 @@ public class MapDrawer()
 
     private void UpdateActiveRooms()
     {
-        foreach(var (room1, room2) in CorridorStatus.Where(s => !s.Value.Blocked).Select(s => s.Key))
+        foreach (var (room1, room2) in CorridorStatus.Where(s => !s.Value.Blocked).Select(s => s.Key))
         {
             ActiveRooms.Add(room1);
             ActiveRooms.Add(room2);

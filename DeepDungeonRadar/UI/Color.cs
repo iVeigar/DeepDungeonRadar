@@ -1,18 +1,12 @@
 ﻿using System;
 using System.Numerics;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 
 namespace DeepDungeonRadar.UI;
 
 public static class Color // ABGR
 {
     private static readonly Random random = new();
-
-    public static readonly Lazy<Vector4> RandomColor = new(delegate ()
-    {
-        ImGui.ColorConvertHSVtoRGB((float)random.NextDouble(), 1f, 1f, out var out_r, out var out_g, out var out_b);
-        return new(out_r, out_g, out_b, 1f);
-    });
 
     public const uint Red = 0xFF0000FF;
 

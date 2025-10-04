@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Numerics;
 using Dalamud.Game.ClientState.Objects.Types;
+using DeepDungeonRadar.Misc;
 using CSGameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
 
 namespace DeepDungeonRadar.Extensions;
@@ -9,24 +10,25 @@ public static class GameObjectExtension
 {
     private static readonly Dictionary<uint, string> NpcBaseMapping = new()
     {
-        [2007358U] = "（金）",
-        [2007357U] = "（银）",
-        [2006020U] = "（拟态怪）",
-        [2007542U] = "宝藏",
-        [2007188U] = "转移石冢",
-        [2007182U] = "地雷",
-        [2007183U] = "诱饵陷阱",
-        [2007184U] = "弱化陷阱",
-        [2007185U] = "妨碍陷阱",
-        [2007186U] = "蛙变陷阱",
-        [2009504U] = "獭獭陷阱"
+        { 2007357, "（银）"},
+        { 2007358, "（金）"},
+        { 2006020,"（拟态怪）"},
+        { 2007542, "埋藏点" },
+        { 2007543, "宝藏" },
+        { 2007182, "爆炸陷阱" },
+        { 2007183, "诱饵陷阱" },
+        { 2007184, "弱化陷阱" },
+        { 2007185, "妨碍陷阱" },
+        { 2007186, "蛙变陷阱" },
+        { 2009504, "獭獭陷阱" },
+        { 2013284, "猫头小鹰陷阱" }
     };
     public static string GetDictionaryName(this IGameObject obj)
     {
         if (NpcBaseMapping.TryGetValue(obj.DataId, out var value))
-        {
             return value;
-        }
+        if (DataIds.BronzeChestIDs.Contains(obj.DataId))
+            return "（铜）";
         return obj.Name.TextValue;
     }
 

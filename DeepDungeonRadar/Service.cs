@@ -17,9 +17,6 @@ namespace DeepDungeonRadar
         public static Plugin Plugin { get; private set; }
 
         public static Configuration Config { get; private set; }
-
-        public static PluginAddressResolver Address { get; set; }
-
         [PluginService] public static IDalamudPluginInterface PluginInterface { get; private set; }
 
         [PluginService] public static IBuddyList BuddyList { get; private set; }
@@ -42,8 +39,6 @@ namespace DeepDungeonRadar
 
         [PluginService] public static IGameGui GameGui { get; private set; }
 
-        [PluginService] public static IGameNetwork GameNetwork { get; private set; }
-
         [PluginService] public static IJobGauges JobGauges { get; private set; }
 
         [PluginService] public static IKeyState KeyState { get; private set; }
@@ -64,6 +59,8 @@ namespace DeepDungeonRadar
 
         [PluginService] public static IPluginLog Log { get; private set; }
 
+        [PluginService] public static IGameInteropProvider GameInteropProvider { get; private set; } = null!;
+
         private static PluginCommandManager<IDalamudPlugin> PluginCommandManager;
 
         private Service(Plugin plugin, IDalamudPluginInterface pluginInterface)
@@ -76,8 +73,6 @@ namespace DeepDungeonRadar
             }
             Config ??= pluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             PluginCommandManager ??= new(plugin);
-            Address = new();
-            Address.Setup(SigScanner);
         }
 
         public static void Initialize(Plugin plugin, IDalamudPluginInterface pluginInterface) => _ = new Service(plugin, pluginInterface);
