@@ -1,9 +1,10 @@
 {
     "Author": "iVeigar",
-    "Name": "Deep Dungeon Radar",
-    "Punchline": "Displays deep dungeon map and objects location on screen.",
-    "Description": "显示深层迷宫地图轮廓并展示游戏实体的位置。\nDisplays deep dungeon map and objects location on screen.",
-    "InternalName": "Deep Dungeon Radar",
+    "Name": "深宫小地图",
+    "Punchline": "帮你快速摸清周围状况！",
+    "Description": "绘制楼层地形轮廓 , 并标出主要的游戏对象的位置",
+    "InternalName": "DeepDungeonRadar",
     "ApplicableVersion": "any",
-    "DalamudApiLevel":  13
+    "Tags": ["Deep Dungeon", "Radar", "Map"],
+    "DalamudApiLevel": 13
 }

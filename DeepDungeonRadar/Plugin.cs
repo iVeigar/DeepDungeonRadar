@@ -1,69 +1,118 @@
-﻿using Dalamud.Interface.Windowing;
+﻿using Dalamud.Game.Text;
+using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Dalamud.Utility;
-using DeepDungeonRadar.Maps;
-using DeepDungeonRadar.Services;
-using DeepDungeonRadar.Windows;
-
+using DeepDungeonRadar.Config;
+using DeepDungeonRadar.Data;
+using DeepDungeonRadar.Radar;
+using ECommons;
+using ECommons.Commands;
+using ECommons.Configuration;
+using ECommons.DalamudServices;
 namespace DeepDungeonRadar;
 
 public sealed class Plugin : IDalamudPlugin
 {
-    public string Name => "DeepDungeonRadar";
     public readonly WindowSystem WindowSystem = new("DeepDungeonRadar");
     private readonly RadarWindow radarWindow;
     private readonly ConfigWindow configWindow;
     private readonly DeepDungeonService deepDungeonService;
-    private readonly MapDrawer mapDrawer;
+    private readonly ColliderBoxService colliderBoxService;
+    private readonly MapService mapService;
+    public static Configuration Config { get; private set; }
     public Plugin(IDalamudPluginInterface pi)
     {
-        Service.Initialize(this, pi);
-        mapDrawer = new();
-        deepDungeonService = new(mapDrawer);
-        radarWindow = new(deepDungeonService, mapDrawer);
-        configWindow = new();
+        ECommonsMain.Init(pi, this);
+        EzConfig.Migrate<Configuration>();
+        Config = EzConfig.Init<Configuration>();
+
+        deepDungeonService = new();
+        colliderBoxService = new(deepDungeonService);
+        mapService = new(deepDungeonService, colliderBoxService);
+        radarWindow = new(deepDungeonService, mapService);
+        configWindow = new(this);
         WindowSystem.AddWindow(configWindow);
         WindowSystem.AddWindow(radarWindow);
-
-        Service.PluginInterface.UiBuilder.Draw += DrawUI;
-        Service.PluginInterface.UiBuilder.OpenConfigUi += ShowConfigWindow;
+        Svc.PluginInterface.UiBuilder.Draw += Draw;
+        Svc.PluginInterface.UiBuilder.OpenConfigUi += ToggleConfigWindow;
     }
 
-    [Command("/ddr")]
-    [HelpMessage("main command")]
-    public void ConfigCommand(string command, string args)
+    [Cmd("/ddr", """
+        打开设置窗口
+        /ddr config → 打开设置窗口
+        /ddr toggle → 启用/禁用小地图
+        /ddr cheat → ???
+        """)]
+    public void ConfigCommand(string _, string args)
     {
         if (args.IsNullOrWhitespace() || args == "config")
-            ShowConfigWindow();
+            ToggleConfigWindow();
         else if (args == "toggle")
         {
-            Service.Config.RadarEnabled ^= true;
-            Service.Config.Save();
-            Service.ChatGui.Print("[DeepDungeonRadar] Map " + (Service.Config.RadarEnabled ? "Enabled" : "Disabled") + ".");
+            Config.RadarEnabled ^= true;
+            Config.Save();
+            ToggleRadar();
         }
         else if (args == "cheat")
         {
-            mapDrawer.Cheat();
+            colliderBoxService.Cheat();
+        }
+    }
+
+    public void ToggleRadar()
+    {
+        if (Config.RadarEnabled)
+        {
+            mapService.RegisterEvents();
+            if (deepDungeonService.InDeepDungeon)
+            {
+                if (!deepDungeonService.FloorTransfer && deepDungeonService.HasRadar)
+                    mapService.OnEnteredNewFloor();
+            }
+            else
+            {
+                mapService.OnExitedDeepDungeon();
+            }
+        }
+        else
+        {
+            mapService.UnregisterEvents();
+            mapService.OnExitedDeepDungeon();
         }
     }
 
     public void Dispose()
     {
+        Svc.PluginInterface.UiBuilder.Draw -= Draw;
+        Svc.PluginInterface.UiBuilder.OpenConfigUi -= ToggleConfigWindow;
         WindowSystem.RemoveAllWindows();
-        Service.PluginInterface.UiBuilder.Draw -= DrawUI;
-        Service.PluginInterface.UiBuilder.OpenConfigUi -= ShowConfigWindow;
-        configWindow.Dispose();
-        radarWindow.Dispose();
+        mapService.Dispose();
         deepDungeonService.Dispose();
-        Service.Dispose();
+        EzConfig.Save();
+        ECommonsMain.Dispose();
     }
-    private void DrawUI()
+    private void Draw()
     {
         WindowSystem.Draw();
+        if (Config.ShowColliderBoxDot)
+            colliderBoxService.Draw();
     }
 
-    public void ShowConfigWindow()
+    public void ToggleConfigWindow()
     {
         configWindow.IsOpen ^= true;
+    }
+
+    public static void PrintChatMessage(string msg)
+    {
+        var message = new XivChatEntry
+        {
+            Message = new SeStringBuilder()
+                      .AddUiForeground($"[深宫小地图] ", 48)
+                      .Append(msg).Build()
+        };
+
+        Svc.Chat.Print(message);
     }
 }

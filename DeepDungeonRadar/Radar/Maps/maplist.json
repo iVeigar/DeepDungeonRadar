@@ -1,0 +1,469 @@
+{
+    "f1c1": [
+        {
+            "MinBoundsX": 166.5,
+            "MinBoundsZ": -433.5,
+            "MaxBoundsX": 447.5,
+            "MaxBoundsZ": -162.5,
+            "Filename": "f1c1.1.bmp"
+        },
+        {
+            "MinBoundsX": -436.5,
+            "MinBoundsZ": 163.0,
+            "MaxBoundsX": -157.5,
+            "MaxBoundsZ": 442.5,
+            "Filename": "f1c1.2.bmp"
+        }
+    ],
+    "f1c2": [
+        {
+            "MinBoundsX": 166.5,
+            "MinBoundsZ": -431.5,
+            "MaxBoundsX": 445.0,
+            "MaxBoundsZ": -164.5,
+            "Filename": "f1c2.1.bmp"
+        },
+        {
+            "MinBoundsX": -433.5,
+            "MinBoundsZ": 164.5,
+            "MaxBoundsX": -159.0,
+            "MaxBoundsZ": 439.5,
+            "Filename": "f1c2.2.bmp"
+        }
+    ],
+    "f1c3": [
+        {
+            "MinBoundsX": 168.0,
+            "MinBoundsZ": -430.5,
+            "MaxBoundsX": 444.5,
+            "MaxBoundsZ": -167.5,
+            "Filename": "f1c3.1.bmp"
+        },
+        {
+            "MinBoundsX": -436.0,
+            "MinBoundsZ": 165.5,
+            "MaxBoundsX": -161.0,
+            "MaxBoundsZ": 442.5,
+            "Filename": "f1c3.2.bmp"
+        }
+    ],
+    "f1c4": [
+        {
+            "MinBoundsX": 167.0,
+            "MinBoundsZ": -432.5,
+            "MaxBoundsX": 447.0,
+            "MaxBoundsZ": -163.0,
+            "Filename": "f1c4.1.bmp"
+        },
+        {
+            "MinBoundsX": -436.0,
+            "MinBoundsZ": 163.0,
+            "MaxBoundsX": -158.0,
+            "MaxBoundsZ": 443.0,
+            "Filename": "f1c4.2.bmp"
+        }
+    ],
+    "f1c5": [
+        {
+            "MinBoundsX": 171.5,
+            "MinBoundsZ": -429.0,
+            "MaxBoundsX": 441.0,
+            "MaxBoundsZ": -147.0,
+            "Filename": "f1c5.1.bmp"
+        },
+        {
+            "MinBoundsX": -433.0,
+            "MinBoundsZ": 163.0,
+            "MaxBoundsX": -160.0,
+            "MaxBoundsZ": 445.0,
+            "Filename": "f1c5.2.bmp"
+        }
+    ],
+    "f1c6": [
+        {
+            "MinBoundsX": 162.5,
+            "MinBoundsZ": -433.5,
+            "MaxBoundsX": 443.5,
+            "MaxBoundsZ": -160.5,
+            "Filename": "f1c6.1.bmp"
+        },
+        {
+            "MinBoundsX": -441.0,
+            "MinBoundsZ": 166.5,
+            "MaxBoundsX": -162.5,
+            "MaxBoundsZ": 433.5,
+            "Filename": "f1c6.2.bmp"
+        }
+    ],
+    "f1c8": [
+        {
+            "MinBoundsX": -434.0,
+            "MinBoundsZ": 165.0,
+            "MaxBoundsX": -160.0,
+            "MaxBoundsZ": 439.5,
+            "Filename": "f1c8.1.bmp"
+        },
+        {
+            "MinBoundsX": 166.5,
+            "MinBoundsZ": -430.5,
+            "MaxBoundsX": 445.0,
+            "MaxBoundsZ": -165.0,
+            "Filename": "f1c8.2.bmp"
+        }
+    ],
+    "f1c9": [
+        {
+            "MinBoundsX": 167.5,
+            "MinBoundsZ": -431.0,
+            "MaxBoundsX": 443.0,
+            "MaxBoundsZ": -167.5,
+            "Filename": "f1c9.1.bmp"
+        },
+        {
+            "MinBoundsX": -436.0,
+            "MinBoundsZ": 165.5,
+            "MaxBoundsX": -162.0,
+            "MaxBoundsZ": 443.5,
+            "Filename": "f1c9.2.bmp"
+        }
+    ],
+    "f1c7": [
+        {
+            "MinBoundsX": -433.5,
+            "MinBoundsZ": 172.0,
+            "MaxBoundsX": -164.0,
+            "MaxBoundsZ": 435.0,
+            "Filename": "f1c7.1.bmp"
+        },
+        {
+            "MinBoundsX": 172.0,
+            "MinBoundsZ": -428.0,
+            "MaxBoundsX": 440.0,
+            "MaxBoundsZ": -176.0,
+            "Filename": "f1c7.2.bmp"
+        }
+    ],
+    "e3c1": [
+        {
+            "MinBoundsX": -435.0,
+            "MinBoundsZ": 166.5,
+            "MaxBoundsX": -160.5,
+            "MaxBoundsZ": 443.0,
+            "Filename": "e3c1.1.bmp"
+        },
+        {
+            "MinBoundsX": 171.0,
+            "MinBoundsZ": -428.0,
+            "MaxBoundsX": 448.0,
+            "MaxBoundsZ": -151.5,
+            "Filename": "e3c1.2.bmp"
+        }
+    ],
+    "e3c2": [
+        {
+            "MinBoundsX": -435.0,
+            "MinBoundsZ": 166.5,
+            "MaxBoundsX": -160.5,
+            "MaxBoundsZ": 443.0,
+            "Filename": "e3c2.1.bmp"
+        },
+        {
+            "MinBoundsX": 171.0,
+            "MinBoundsZ": -428.0,
+            "MaxBoundsX": 448.0,
+            "MaxBoundsZ": -151.5,
+            "Filename": "e3c2.2.bmp"
+        },
+        {
+            "MinBoundsX": 193.5,
+            "MinBoundsZ": 223.0,
+            "MaxBoundsX": 406.0,
+            "MaxBoundsZ": 377.0,
+            "Filename": "e3c2.3.bmp"
+        }
+    ],
+    "e3c3": [
+        {
+            "MinBoundsX": 171.0,
+            "MinBoundsZ": -429.0,
+            "MaxBoundsX": 441.0,
+            "MaxBoundsZ": -147.0,
+            "Filename": "e3c3.1.bmp"
+        },
+        {
+            "MinBoundsX": -433.0,
+            "MinBoundsZ": 163.0,
+            "MaxBoundsX": -159.0,
+            "MaxBoundsZ": 445.0,
+            "Filename": "e3c3.2.bmp"
+        },
+        {
+            "MinBoundsX": 189.0,
+            "MinBoundsZ": 221.0,
+            "MaxBoundsX": 411.0,
+            "MaxBoundsZ": 379.0,
+            "Filename": "e3c3.3.bmp"
+        }
+    ],
+    "e3c4": [
+        {
+            "MinBoundsX": 166.0,
+            "MinBoundsZ": -425.5,
+            "MaxBoundsX": 436.0,
+            "MaxBoundsZ": -161.5,
+            "Filename": "e3c4.1.bmp"
+        },
+        {
+            "MinBoundsX": -425.5,
+            "MinBoundsZ": 166.0,
+            "MaxBoundsX": -174.5,
+            "MaxBoundsZ": 438.5,
+            "Filename": "e3c4.2.bmp"
+        },
+        {
+            "MinBoundsX": 183.5,
+            "MinBoundsZ": 222.5,
+            "MaxBoundsX": 416.5,
+            "MaxBoundsZ": 377.5,
+            "Filename": "e3c4.3.bmp"
+        }
+    ],
+    "e3c5": [
+        {
+            "MinBoundsX": 166.0,
+            "MinBoundsZ": -425.5,
+            "MaxBoundsX": 436.0,
+            "MaxBoundsZ": -161.5,
+            "Filename": "e3c5.1.bmp"
+        },
+        {
+            "MinBoundsX": -425.5,
+            "MinBoundsZ": 166.0,
+            "MaxBoundsX": -174.5,
+            "MaxBoundsZ": 438.5,
+            "Filename": "e3c5.2.bmp"
+        },
+        {
+            "MinBoundsX": 183.5,
+            "MinBoundsZ": 222.5,
+            "MaxBoundsX": 416.5,
+            "MaxBoundsZ": 377.5,
+            "Filename": "e3c5.3.bmp"
+        }
+    ],
+    "e3c6": [
+        {
+            "MinBoundsX": -432.5,
+            "MinBoundsZ": 164.0,
+            "MaxBoundsX": -160.0,
+            "MaxBoundsZ": 444.5,
+            "Filename": "e3c6.1.bmp"
+        },
+        {
+            "MinBoundsX": 171.5,
+            "MinBoundsZ": -428.5,
+            "MaxBoundsX": 440.5,
+            "MaxBoundsZ": -155.5,
+            "Filename": "e3c6.2.bmp"
+        },
+        {
+            "MinBoundsX": 186.5,
+            "MinBoundsZ": 222.5,
+            "MaxBoundsX": 413.5,
+            "MaxBoundsZ": 377.5,
+            "Filename": "e3c6.3.bmp"
+        }
+    ],
+    "l5c1": [
+        {
+            "MinBoundsX": 136.5,
+            "MinBoundsZ": -465.0,
+            "MaxBoundsX": 453.5,
+            "MaxBoundsZ": -151.0,
+            "Filename": "l5c1.1.bmp"
+        },
+        {
+            "MinBoundsX": -449.0,
+            "MinBoundsZ": 145.0,
+            "MaxBoundsX": -135.0,
+            "MaxBoundsZ": 453.5,
+            "Filename": "l5c1.2.bmp"
+        }
+    ],
+    "l5c2": [
+        {
+            "MinBoundsX": -449.0,
+            "MinBoundsZ": 145.0,
+            "MaxBoundsX": -135.0,
+            "MaxBoundsZ": 453.5,
+            "Filename": "l5c2.1.bmp"
+        },
+        {
+            "MinBoundsX": 136.5,
+            "MinBoundsZ": -465.0,
+            "MaxBoundsX": 453.5,
+            "MaxBoundsZ": -151.0,
+            "Filename": "l5c2.2.bmp"
+        }
+    ],
+    "l5c3": [
+        {
+            "MinBoundsX": 155.0,
+            "MinBoundsZ": -445.0,
+            "MaxBoundsX": 445.0,
+            "MaxBoundsZ": -155.0,
+            "Filename": "l5c3.1.bmp"
+        },
+        {
+            "MinBoundsX": -445.0,
+            "MinBoundsZ": 155.0,
+            "MaxBoundsX": -155.0,
+            "MaxBoundsZ": 445.0,
+            "Filename": "l5c3.2.bmp"
+        }
+    ],
+    "l5c4": [
+        {
+            "MinBoundsX": 169.0,
+            "MinBoundsZ": -431.0,
+            "MaxBoundsX": 442.0,
+            "MaxBoundsZ": -169.0,
+            "Filename": "l5c4.1.bmp"
+        },
+        {
+            "MinBoundsX": -434.0,
+            "MinBoundsZ": 167.0,
+            "MaxBoundsX": -162.5,
+            "MaxBoundsZ": 443.0,
+            "Filename": "l5c4.2.bmp"
+        }
+    ],
+    "l5c5": [
+        {
+            "MinBoundsX": 167.5,
+            "MinBoundsZ": -431.0,
+            "MaxBoundsX": 441.5,
+            "MaxBoundsZ": -166.5,
+            "Filename": "l5c5.1.bmp"
+        },
+        {
+            "MinBoundsX": -436.5,
+            "MinBoundsZ": 167.5,
+            "MaxBoundsX": -162.5,
+            "MaxBoundsZ": 443.5,
+            "Filename": "l5c5.2.bmp"
+        }
+    ],
+    "l5c6": [
+        {
+            "MinBoundsX": -481.0,
+            "MinBoundsZ": 118.5,
+            "MaxBoundsX": -118.5,
+            "MaxBoundsZ": 481.5,
+            "Filename": "l5c6.1.bmp"
+        },
+        {
+            "MinBoundsX": 118.5,
+            "MinBoundsZ": -481.0,
+            "MaxBoundsX": 481.0,
+            "MaxBoundsZ": -119.0,
+            "Filename": "l5c6.2.bmp"
+        }
+    ],
+    "n6c1": [
+        {
+            "MinBoundsX": -461.0,
+            "MinBoundsZ": 139.5,
+            "MaxBoundsX": -147.5,
+            "MaxBoundsZ": 442.5,
+            "Filename": "n6c1.1.bmp"
+        },
+        {
+            "MinBoundsX": 139.5,
+            "MinBoundsZ": -452.5,
+            "MaxBoundsX": 442.5,
+            "MaxBoundsZ": -139.0,
+            "Filename": "n6c1.2.bmp"
+        }
+    ],
+    "n6c2": [
+        {
+            "MinBoundsX": 139.5,
+            "MinBoundsZ": -452.5,
+            "MaxBoundsX": 442.5,
+            "MaxBoundsZ": -148.0,
+            "Filename": "n6c2.1.bmp"
+        },
+        {
+            "MinBoundsX": -452.0,
+            "MinBoundsZ": 139.5,
+            "MaxBoundsX": -147.5,
+            "MaxBoundsZ": 442.5,
+            "Filename": "n6c2.2.bmp"
+        }
+    ],
+    "n6c3": [
+        {
+            "MinBoundsX": 142.0,
+            "MinBoundsZ": -470.5,
+            "MaxBoundsX": 466.5,
+            "MaxBoundsZ": -158.5,
+            "Filename": "n6c3.1.bmp"
+        },
+        {
+            "MinBoundsX": -456.5,
+            "MinBoundsZ": 141.5,
+            "MaxBoundsX": -123.5,
+            "MaxBoundsZ": 462.5,
+            "Filename": "n6c3.2.bmp"
+        }
+    ],
+    "n6c4": [
+        {
+            "MinBoundsX": -517.0,
+            "MinBoundsZ": 108.5,
+            "MaxBoundsX": -98.5,
+            "MaxBoundsZ": 506.5,
+            "Filename": "n6c4.1.bmp"
+        },
+        {
+            "MinBoundsX": 108.5,
+            "MinBoundsZ": -501.5,
+            "MaxBoundsX": 506.5,
+            "MaxBoundsZ": -87.5,
+            "Filename": "n6c4.2.bmp"
+        }
+    ],
+    "n6c5": [
+        {
+            "MinBoundsX": -517.0,
+            "MinBoundsZ": 109.0,
+            "MaxBoundsX": -94.0,
+            "MaxBoundsZ": 507.0,
+            "Filename": "n6c5.1.bmp"
+        },
+        {
+            "MinBoundsX": 109.0,
+            "MinBoundsZ": -506.0,
+            "MaxBoundsX": 507.0,
+            "MaxBoundsZ": -83.0,
+            "Filename": "n6c5.2.bmp"
+        }
+    ],
+    "n6c6": [
+        {
+            "MinBoundsX": 171.5,
+            "MinBoundsZ": -427.0,
+            "MaxBoundsX": 439.0,
+            "MaxBoundsZ": -155.5,
+            "Filename": "n6c6.1.bmp"
+        },
+        {
+            "MinBoundsX": -440.5,
+            "MinBoundsZ": 165.0,
+            "MaxBoundsX": -161.0,
+            "MaxBoundsZ": 444.5,
+            "Filename": "n6c6.2.bmp"
+        }
+    ]
+}
