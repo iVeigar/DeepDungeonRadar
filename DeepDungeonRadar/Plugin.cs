@@ -4,7 +4,6 @@ using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Dalamud.Utility;
 using DeepDungeonRadar.Config;
-using DeepDungeonRadar.Data;
 using DeepDungeonRadar.Radar;
 using ECommons;
 using ECommons.Commands;
@@ -30,6 +29,8 @@ public sealed class Plugin : IDalamudPlugin
         deepDungeonService = new();
         colliderBoxService = new(deepDungeonService);
         mapService = new(deepDungeonService, colliderBoxService);
+        deepDungeonService.OnTerritoryChange(Svc.ClientState.TerritoryType);
+
         radarWindow = new(deepDungeonService, mapService);
         configWindow = new(this);
         WindowSystem.AddWindow(configWindow);
@@ -65,20 +66,13 @@ public sealed class Plugin : IDalamudPlugin
         if (Config.RadarEnabled)
         {
             mapService.RegisterEvents();
-            if (deepDungeonService.InDeepDungeon)
-            {
-                if (!deepDungeonService.FloorTransfer && deepDungeonService.HasRadar)
-                    mapService.OnEnteredNewFloor();
-            }
-            else
-            {
-                mapService.OnExitedDeepDungeon();
-            }
+            if (deepDungeonService.HasRadar)
+                mapService.OnEnteredNewFloor();
         }
         else
         {
             mapService.UnregisterEvents();
-            mapService.OnExitedDeepDungeon();
+            mapService.OnExitingCurrentFloor(true);
         }
     }
 

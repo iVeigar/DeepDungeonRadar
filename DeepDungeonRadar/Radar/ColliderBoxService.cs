@@ -17,7 +17,7 @@ public class ColliderBoxService(DeepDungeonService dds)
     private bool ReadyToCheat = false;
     public unsafe void Draw()
     {
-        if (!deepDungeonService.InDeepDungeon || deepDungeonService.FloorTransfer || !deepDungeonService.HasRadar) return;
+        if (!deepDungeonService.InDeepDungeon || !deepDungeonService.HasMap) return;
         try
         {
             var sceneWrapper = Framework.Instance()->BGCollisionModule->SceneManager->FirstScene;
@@ -50,6 +50,8 @@ public class ColliderBoxService(DeepDungeonService dds)
 
     public unsafe void Update()
     {
+        if (!deepDungeonService.HasRadar)
+            return;
         try
         {
             foreach (var coll in Framework.Instance()->BGCollisionModule->SceneManager->FirstScene->Scene->Colliders)
@@ -75,7 +77,7 @@ public class ColliderBoxService(DeepDungeonService dds)
     {
         if (Cheated)
         {
-            if (deepDungeonService.InDeepDungeon && deepDungeonService.HasRadar)
+            if (deepDungeonService.InDeepDungeon)
             {
                 try
                 {
@@ -98,7 +100,7 @@ public class ColliderBoxService(DeepDungeonService dds)
 
     public unsafe void Cheat()
     {
-        if (!deepDungeonService.InDeepDungeon || !ReadyToCheat)
+        if (!ReadyToCheat)
             return;
         try
         {

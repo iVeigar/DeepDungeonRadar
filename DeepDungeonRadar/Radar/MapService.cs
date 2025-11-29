@@ -73,14 +73,12 @@ public sealed class MapService : IDisposable
     
     public void RegisterEvents()
     {
-        deepDungeonService.ExitedDeepDungeon += OnExitedDeepDungeon;
         deepDungeonService.EnteredNewFloor += OnEnteredNewFloor;
         deepDungeonService.ExitingCurrentFloor += OnExitingCurrentFloor;
     }
 
     public void UnregisterEvents()
     {
-        deepDungeonService.ExitedDeepDungeon -= OnExitedDeepDungeon;
         deepDungeonService.EnteredNewFloor -= OnEnteredNewFloor;
         deepDungeonService.ExitingCurrentFloor -= OnExitingCurrentFloor;
     }
@@ -143,10 +141,12 @@ public sealed class MapService : IDisposable
         return true;
     }
 
-    public void OnExitingCurrentFloor()
+    public void OnExitingCurrentFloor(bool exitDungeon)
     {
         colliderBoxService.Reset();
         ResetCurrentMap();
+        if (exitDungeon)
+            loadedMaps.Clear();
     }
 
     public void OnEnteredNewFloor()
@@ -154,12 +154,6 @@ public sealed class MapService : IDisposable
         colliderBoxService.Update();
         spawnPoint = MeWorldPos.ToVector2();
         TaskLoadMap();
-    }
-
-    public void OnExitedDeepDungeon()
-    {
-        OnExitingCurrentFloor();
-        loadedMaps.Clear();
     }
 
     public void ResetCurrentMap()
@@ -231,20 +225,21 @@ public sealed class MapService : IDisposable
 
     private bool LoadCurrentMap()
     {
-        if (!deepDungeonService.HasRadar)
+        if (!deepDungeonService.HasMap)
             return false;
-        if (!TryLoadMaps(CurrentTerritory.ToBg().ToString()))
+        var bg = deepDungeonService.CurrentTerritory.ToBg().ToString();
+        if (!TryLoadMaps(bg))
         {
-            Svc.Log.Warning($"Map not found for [{CurrentTerritory.ToBg()}]");
+            Svc.Log.Warning($"Map not found for [{bg}]");
             return false;
         }
         CurrentMap = Find(spawnPoint);
         if (CurrentMap == default)
         {
-            Svc.Log.Warning($"Map not found for starting position {spawnPoint} on [{CurrentTerritory.ToBg()}]");
+            Svc.Log.Warning($"Map not found for starting position {spawnPoint} on [{bg}]");
             return false;
         }
-        Svc.Log.Debug($"Loaded map for [{CurrentTerritory.ToBg()}]");
+        Svc.Log.Debug($"Loaded map for [{bg}]");
         return true;
     }
 
@@ -517,6 +512,6 @@ public sealed class MapService : IDisposable
     public void Dispose()
     {
         UnregisterEvents();
-        OnExitedDeepDungeon();
+        OnExitingCurrentFloor(true);
     }
 }

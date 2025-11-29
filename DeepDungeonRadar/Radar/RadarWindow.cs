@@ -36,7 +36,7 @@ public sealed class RadarWindow(DeepDungeonService deepDungeonService, MapServic
 
     public override void PreOpenCheck()
     {
-        IsOpen = config.RadarEnabled && deepDungeonService.InDeepDungeon && deepDungeonService.HasRadar;
+        IsOpen = config.RadarEnabled && deepDungeonService.HasRadar;
     }
 
     public override unsafe void PreDraw()
@@ -191,7 +191,7 @@ public sealed class RadarWindow(DeepDungeonService deepDungeonService, MapServic
             windowDrawList.DrawDotWithText(pos, name, color, strokeColor);
         }
 
-        var playerConeRad = radarRotation - playerRotation + MathF.PI * 0.5f;
+        var playerConeRad = radarRotation - cameraRotation - MathF.PI * 0.5f;
         var playerMarkerCfg = config.Markers.Player;
         windowDrawList.DrawDotWithText(windowCenter, playerMarkerCfg.ShowName ? "我" : null, playerMarkerCfg.Color, playerMarkerCfg.StrokeColor);
         windowDrawList.PathArcTo(windowCenter, zoom * 25f, playerConeRad - MathF.PI * 0.25f, playerConeRad + MathF.PI * 0.25f, 24);

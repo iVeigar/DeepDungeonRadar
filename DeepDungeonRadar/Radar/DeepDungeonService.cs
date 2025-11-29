@@ -4,8 +4,10 @@ using System.Text.RegularExpressions;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Plugin.Services;
 using DeepDungeonRadar.Config;
 using DeepDungeonRadar.Data;
+using ECommons;
 using ECommons.DalamudServices;
 using ECommons.EzHookManager;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -30,46 +32,53 @@ public sealed partial class DeepDungeonService : IDisposable
     private readonly EzHook<SystemLogMessageDelegate> SystemLogMessageHook;
 #pragma warning restore CS0649
 
-    public event Action? ExitingCurrentFloor;
+    // false: only floor transfer, true: exit dungeon as well
+    public delegate void ExitingCurrentFloorDelegate(bool exitDungeon);
+    public event ExitingCurrentFloorDelegate? ExitingCurrentFloor;
     public event Action? EnteredNewFloor;
-    public event Action? ExitedDeepDungeon;
 
     private readonly Configuration config = Plugin.Config;
     private int chatMessageFloor;
     private int addonFloor;
     private int startFloor;
-    private long lastCheckAt;
     private bool inPotD;
     private bool inHoH;
     private bool inEO;
     private bool inPT;
 
     public static Vector3 MeWorldPos => Svc.ClientState.LocalPlayer?.Position ?? default;
-    public static ushort CurrentTerritory => Svc.ClientState.TerritoryType;
+    public ushort CurrentTerritory { get; private set; }
 
-    public int CurrentFloor
-    {
-        get
+    public int CurrentFloor { get; private set; }
+
+    public bool HasRadar => InDeepDungeon && !FloorTransfer && HasMap;
+
+    public bool HasMap => CurrentFloor % 10 != 0 && (!(inEO || inPT) || CurrentFloor < 99);
+
+    private bool _floorTransfer = true;
+    
+    public bool FloorTransfer
+    {   
+        get => _floorTransfer;
+        private set
         {
-            if (Environment.TickCount64 - lastCheckAt > 200)
+            if (_floorTransfer != value)
             {
-                lastCheckAt = Environment.TickCount64;
-                int floor = chatMessageFloor != 0 ? chatMessageFloor : (TryGetAddonFloorNumber() ? addonFloor : startFloor);
-                if (floor > field && !Svc.Condition[ConditionFlag.BetweenAreas] && !Svc.Condition[ConditionFlag.BetweenAreas51])
+                _floorTransfer = value;
+                if (_floorTransfer)
                 {
-                    field = floor;
-                    Svc.Log.Debug($"Entered new floor: #{field}");
+                    Svc.Log.Debug("Exiting current floor..");
+                    ExitingCurrentFloor?.Invoke(false);
+                }
+                else
+                {
+                    Svc.Log.Debug($"Entered new floor #{CurrentFloor}");
+                    AccursedHoardOpened = false;
                     EnteredNewFloor?.Invoke();
                 }
             }
-            return field;
         }
-        private set;
     }
-    
-    public bool HasRadar => CurrentFloor % 10 != 0 && (!(inEO || inPT) || CurrentFloor < 99);
-
-    public bool FloorTransfer { get; private set; }
     
     public bool AccursedHoardOpened { get; private set; }
     
@@ -77,57 +86,44 @@ public sealed partial class DeepDungeonService : IDisposable
 
     public DeepDungeonService()
     {
-        Svc.Condition.ConditionChange += OnConditionChange;
+        EzSignatureHelper.Initialize(this);
         Svc.Chat.CheckMessageHandled += OnChatMessage;
-        ExitingCurrentFloor += OnExitingCurrentFloor;
-        EnteredNewFloor += OnEnteredNewFloor;
-        ExitedDeepDungeon += OnExitedDeepDungeon;
-        RefreshInDungeon();
+        Svc.ClientState.TerritoryChanged += OnTerritoryChange;
+        Svc.Framework.Update += UpdateFloor;
     }
 
-    private void OnEnteredNewFloor()
+    private void UpdateFloor(IFramework _)
     {
-        AccursedHoardOpened = false;
-        FloorTransfer = false;
-    }
-
-    private void RefreshInDungeon()
-    {
-        inPotD = CurrentTerritory.InPotD();
-        inHoH = CurrentTerritory.InHoH();
-        inEO = CurrentTerritory.InEO();
-        inPT = CurrentTerritory.InPT();
-    }
-    private void OnExitingCurrentFloor()
-    {
-        FloorTransfer = true;
-    }
-
-    private void OnExitedDeepDungeon()
-    {
-        inPotD = inHoH = inEO = inPT = false;
-        chatMessageFloor = 0;
-        addonFloor = 0;
-        startFloor = 0;
-        CurrentFloor = 0;
-        AccursedHoardOpened = false;
-    }
-
-    private void OnConditionChange(ConditionFlag flag, bool value)
-    {
-        if (flag != ConditionFlag.InDeepDungeon)
+        if (!InDeepDungeon || Svc.Condition[ConditionFlag.BetweenAreas] || Svc.Condition[ConditionFlag.BetweenAreas51])
             return;
-        if (value)
+        var floor = chatMessageFloor != 0 ? chatMessageFloor : (TryGetAddonFloorNumber() ? addonFloor : startFloor);
+        if (floor > CurrentFloor)
         {
-            Svc.Log.Debug($"Entering deep dungeon");
-            RefreshInDungeon();
+            CurrentFloor = floor;
+            FloorTransfer = false;
         }
-        else
+    }
+
+    public void OnTerritoryChange(ushort newTerritory)
+    {
+        inPotD = newTerritory.InPotD();
+        inHoH = newTerritory.InHoH();
+        inEO = newTerritory.InEO();
+        inPT = newTerritory.InPT();
+        CurrentTerritory = newTerritory;
+        if (!InDeepDungeon)
         {
             Svc.Log.Debug($"Exited deep dungeon");
-            ExitedDeepDungeon?.Invoke();
+            chatMessageFloor = 0;
+            addonFloor = 0;
+            startFloor = 0;
+            CurrentFloor = 0;
+
+            AccursedHoardOpened = false;
+            _floorTransfer = true;
+            ExitingCurrentFloor?.Invoke(true);
         }
-    }
+    }   
 
     private void OnChatMessage(XivChatType type, int timestamp, ref SeString sender, ref SeString seMessage, ref bool isHandled)
     {
@@ -153,18 +149,17 @@ public sealed partial class DeepDungeonService : IDisposable
             }
         }
     }
-    
+
     private unsafe void SystemLogMessageDetour(uint entityId, uint logId, int* args, byte argCount)
     {
         SystemLogMessageHook!.Original(entityId, logId, args, argCount);
         if (!InDeepDungeon)
             return;
 
-        switch (logId) 
+        switch (logId)
         {
             case 7248:
-                Svc.Log.Debug("Floor transference initiated, exiting current floor.");
-                ExitingCurrentFloor?.Invoke();
+                FloorTransfer = true;
                 break;
             case 7275:
             case 7276:
@@ -176,24 +171,21 @@ public sealed partial class DeepDungeonService : IDisposable
 
     private unsafe bool TryGetAddonFloorNumber()
     {
-        var addon = Svc.GameGui.GetAddonByName("DeepDungeonMap", 1);
-        if (!addon.IsReady || !addon.IsVisible)
+        if (GenericHelpers.TryGetAddonByName<AtkUnitBase>("DeepDungeonMap", out var addon)
+            && GenericHelpers.IsAddonReady(addon))
         {
-            addonFloor = 0;
-            return false;
+            var floorText = addon->GetNodeById(26)->ChildNode->PrevSiblingNode->GetAsAtkTextNode()->NodeText.ToString();
+            addonFloor = int.Parse(AddonFloorNumber().Match(floorText).Value);
+            return true;
         }
-        var floorText = ((AtkUnitBase*)addon.Address)->GetNodeById(26)->ChildNode->PrevSiblingNode->GetAsAtkTextNode()->NodeText.ToString();
-        addonFloor = int.Parse(AddonFloorNumber().Match(floorText).Value);
-        return true;
+        addonFloor = 0;
+        return false;
     }
 
     public void Dispose()
     {
-        ExitingCurrentFloor -= OnExitingCurrentFloor;
-        EnteredNewFloor -= OnEnteredNewFloor;
-        ExitedDeepDungeon -= OnExitedDeepDungeon;
-
-        Svc.Condition.ConditionChange -= OnConditionChange;
+        Svc.Framework.Update -= UpdateFloor;
+        Svc.ClientState.TerritoryChanged -= OnTerritoryChange;
         Svc.Chat.CheckMessageHandled -= OnChatMessage;
     }
 }
