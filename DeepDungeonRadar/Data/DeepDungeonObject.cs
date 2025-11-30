@@ -130,7 +130,7 @@ public static class DeepDungeonObject
         2014755
     ];
 
-    public static readonly HashSet<uint> FriendlyIDs =
+    public static readonly HashSet<uint> FriendlyNameIDs =
     [
         // HoH
         7396, 7397, 7398,
@@ -144,7 +144,7 @@ public static class DeepDungeonObject
 
     public static bool IsPlayer(this IGameObject obj) => obj.ObjectKind == ObjectKind.Player;
 
-    public static bool IsEnemy(this IGameObject obj, out IBattleNpc bNpc)
+    public static bool IsMob(this IGameObject obj, out IBattleNpc bNpc)
     {
         if (obj.ObjectKind == ObjectKind.BattleNpc && (BattleNpcSubKind)obj.SubKind == BattleNpcSubKind.Enemy)
         {
@@ -159,7 +159,7 @@ public static class DeepDungeonObject
 
     public static bool IsKerrigan(this IBattleNpc bNpc) => KorriganNameIDs.Contains(bNpc.NameId);
 
-    public static bool IsFriendly(this IGameObject obj) => FriendlyIDs.Contains(obj.BaseId);
+    public static bool IsFriendly(this IBattleNpc bNpc) => FriendlyNameIDs.Contains(bNpc.NameId);
 
     public static bool IsPassage(this IGameObject obj) => PassageIDs.Contains(obj.BaseId);
 

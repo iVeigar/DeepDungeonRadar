@@ -12,8 +12,8 @@ using DeepDungeonRadar.Config;
 using DeepDungeonRadar.Data;
 using DeepDungeonRadar.Utils;
 using ECommons.DalamudServices;
+using ECommons.GameHelpers;
 using SkiaSharp;
-using static DeepDungeonRadar.Radar.DeepDungeonService;
 namespace DeepDungeonRadar.Radar;
 
 public sealed class MapService : IDisposable
@@ -42,6 +42,7 @@ public sealed class MapService : IDisposable
     private readonly ColliderBoxService colliderBoxService;
     private readonly Dictionary<string, List<MapInfo>> mapEntries = [];
     private readonly List<(MapInfo info, Bmp1pp data)> loadedMaps = [];
+
     public (MapInfo Info, Bmp1pp BitMap) CurrentMap { get; private set; }
     private SKBitmap processedMap;
     private Vector2 spawnPoint;
@@ -67,8 +68,8 @@ public sealed class MapService : IDisposable
         this.colliderBoxService = colliderBoxService;
         LoadMapEntries();
         RefreshDrawingConfig();
-        RegisterEvents();
     }
+
     public (MapInfo entry, Bmp1pp data) Find(Vector2 pos) => loadedMaps.FirstOrDefault(e => e.info.Contains(pos));
     
     public void RegisterEvents()
@@ -152,7 +153,7 @@ public sealed class MapService : IDisposable
     public void OnEnteredNewFloor()
     {
         colliderBoxService.Update();
-        spawnPoint = MeWorldPos.ToVector2();
+        spawnPoint = Player.Position.ToVector2();
         TaskLoadMap();
     }
 
@@ -227,7 +228,7 @@ public sealed class MapService : IDisposable
     {
         if (!deepDungeonService.HasMap)
             return false;
-        var bg = deepDungeonService.CurrentTerritory.ToBg().ToString();
+        var bg = Player.Territory.ToBg().ToString();
         if (!TryLoadMaps(bg))
         {
             Svc.Log.Warning($"Map not found for [{bg}]");

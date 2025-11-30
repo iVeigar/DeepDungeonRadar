@@ -9,8 +9,8 @@ using DeepDungeonRadar.Config;
 using DeepDungeonRadar.Data;
 using DeepDungeonRadar.Utils;
 using ECommons.DalamudServices;
+using ECommons.GameHelpers;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
-using static DeepDungeonRadar.Radar.DeepDungeonService;
 
 namespace DeepDungeonRadar.Radar;
 
@@ -36,7 +36,7 @@ public sealed class RadarWindow(DeepDungeonService deepDungeonService, MapServic
 
     public override void PreOpenCheck()
     {
-        IsOpen = config.RadarEnabled && deepDungeonService.HasRadar;
+        IsOpen = config.RadarEnabled && deepDungeonService.IsRadarReady;
     }
 
     public override unsafe void PreDraw()
@@ -88,9 +88,14 @@ public sealed class RadarWindow(DeepDungeonService deepDungeonService, MapServic
             {
                 markerCfg = config.Markers.Player;
             }
-            else if (o.IsEnemy(out var b))
+            else if (o.IsMob(out var b))
             {
-                if (!b.IsDead && b.IsTargetable)
+                if (b.IsFriendly())
+                {
+                    markerCfg = config.Markers.Friendly;
+                    markerCfg.ShowName = true;
+                }
+                else if (!b.IsDead && b.IsTargetable)
                 {
                     markerCfg = config.Markers.Enemy;
                     if (b.IsMimic() || b.IsKerrigan())
@@ -99,12 +104,7 @@ public sealed class RadarWindow(DeepDungeonService deepDungeonService, MapServic
                 else
                     continue;
             }
-            else if (o.IsFriendly())
-            {
-                markerCfg = config.Markers.Friendly;
-            }
-            // todo 单刷模式不显示再生装置
-            // todo 记住3种装置的位置
+            // todo 设置单刷时不显示再生装置
             else if (o.IsPassage() || o.IsReturn())
             {
                 markerCfg = config.Markers.EventObj;
@@ -165,6 +165,7 @@ public sealed class RadarWindow(DeepDungeonService deepDungeonService, MapServic
         var windowLeftTop = ImGui.GetWindowPos();
         var windowCenter = windowLeftTop + windowSize / 2;
         var meWindowPos = windowCenter;
+        var meWorldPos = Player.Position.ToVector2();
         var zoom = windowSize.X * UvZoom / 256f;
 
         var windowDrawList = ImGui.GetWindowDrawList();
@@ -176,10 +177,10 @@ public sealed class RadarWindow(DeepDungeonService deepDungeonService, MapServic
         {
             var info = mapService.CurrentMap.Info;
             windowDrawList.AddImageQuad(mapService.ColoredMapTexture.Handle,
-                info.TopLeft.WorldToWindow(MeWorldPos.ToVector2(), meWindowPos, zoom, radarRotationVec2),
-                info.TopRight.WorldToWindow(MeWorldPos.ToVector2(), meWindowPos, zoom, radarRotationVec2),
-                info.BottomRight.WorldToWindow(MeWorldPos.ToVector2(), meWindowPos, zoom, radarRotationVec2),
-                info.BottomLeft.WorldToWindow(MeWorldPos.ToVector2(), meWindowPos, zoom, radarRotationVec2)
+                info.TopLeft.WorldToWindow(meWorldPos, meWindowPos, zoom, radarRotationVec2),
+                info.TopRight.WorldToWindow(meWorldPos, meWindowPos, zoom, radarRotationVec2),
+                info.BottomRight.WorldToWindow(meWorldPos, meWindowPos, zoom, radarRotationVec2),
+                info.BottomLeft.WorldToWindow(meWorldPos, meWindowPos, zoom, radarRotationVec2)
             );
         }
 
@@ -187,7 +188,7 @@ public sealed class RadarWindow(DeepDungeonService deepDungeonService, MapServic
         windowDrawList.ChannelsSetCurrent(1);
         foreach (var (worldpos, color, strokeColor, name, _) in RadarDrawList)
         {
-            var pos = worldpos.WorldToWindow(MeWorldPos.ToVector2(), windowCenter, zoom, radarRotationVec2);
+            var pos = worldpos.WorldToWindow(Player.Position.ToVector2(), windowCenter, zoom, radarRotationVec2);
             windowDrawList.DrawDotWithText(pos, name, color, strokeColor);
         }
 
@@ -197,6 +198,7 @@ public sealed class RadarWindow(DeepDungeonService deepDungeonService, MapServic
         windowDrawList.PathArcTo(windowCenter, zoom * 25f, playerConeRad - MathF.PI * 0.25f, playerConeRad + MathF.PI * 0.25f, 24);
         windowDrawList.PathLineTo(windowCenter);
         windowDrawList.PathStroke(playerMarkerCfg.Color, ImDrawFlags.Closed, 1f);
+
         windowDrawList.AddCircle(windowCenter, zoom * 80f, config.RadarSenseCircleOutlineColor, 100);
 
         // Draw buttons
@@ -220,10 +222,10 @@ public sealed class RadarWindow(DeepDungeonService deepDungeonService, MapServic
                 UvZoom -= 0.1f;
             }
         }
-        if (ImGui.IsWindowHovered())
-        {
-            UvZoom += ImGui.GetIO().MouseWheel * 0.1f;
-        }
+            if (ImGui.IsWindowHovered())
+            {
+                UvZoom += ImGui.GetIO().MouseWheel * 0.1f;
+            }
         windowDrawList.ChannelsMerge();
     }
 }

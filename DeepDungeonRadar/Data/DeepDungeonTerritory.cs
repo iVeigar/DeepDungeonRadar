@@ -59,13 +59,13 @@ public static class DeepDungeonTerritory
         1281, 1282, 1283, 1284, 1285, 1286, 1287, 1288, 1289, 1290
     ];
 
-    public static DeepDungeonBg ToBg(this ushort territory) => Enum.TryParse<DeepDungeonBg>(Svc.Data.GetExcelSheet<TerritoryType>().GetRow(territory).Bg.ToString().Split('/')[^1], true, out var bg) ? bg : DeepDungeonBg.none;
+    public static DeepDungeonBg ToBg(this uint territory) => Enum.TryParse<DeepDungeonBg>(Svc.Data.GetExcelSheet<TerritoryType>().GetRow(territory).Bg.ToString().Split('/')[^1], true, out var bg) ? bg : DeepDungeonBg.none;
 
-    public static bool InPotD(this ushort territory) => PotDTerritoryIds.Contains(territory);
+    public static bool InPotD(this uint territory) => PotDTerritoryIds.Contains(territory);
 
-    public static bool InHoH(this ushort territory) => HoHTerritoryIds.Contains(territory);
+    public static bool InHoH(this uint territory) => HoHTerritoryIds.Contains(territory);
 
-    public static bool InEO(this ushort territory) => EOTerritoryIds.Contains(territory);
+    public static bool InEO(this uint territory) => EOTerritoryIds.Contains(territory);
 
-    public static bool InPT(this ushort territory) => PTTerritoryIds.Contains(territory);
+    public static bool InPT(this uint territory) => PTTerritoryIds.Contains(territory);
 }

@@ -4,17 +4,17 @@ using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using DeepDungeonRadar.Utils;
 using ECommons.DalamudServices;
+using ECommons.GameHelpers;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Common.Component.BGCollision;
-using static DeepDungeonRadar.Radar.DeepDungeonService;
 namespace DeepDungeonRadar.Radar;
 
-public class ColliderBoxService(DeepDungeonService dds)
+public class ColliderBoxService(DeepDungeonService deepDungeonService)
 {
     public readonly Dictionary<Vector3, (bool Vertical, bool Blocked)> ColliderBoxes = [];
-    private readonly DeepDungeonService deepDungeonService = dds;
+    private readonly DeepDungeonService deepDungeonService = deepDungeonService;
     private bool Cheated = false;
-    private bool ReadyToCheat = false;
+    private bool IsCheatReady = false;
     public unsafe void Draw()
     {
         if (!deepDungeonService.InDeepDungeon || !deepDungeonService.HasMap) return;
@@ -30,8 +30,8 @@ public class ColliderBoxService(DeepDungeonService dds)
                     continue;
                 var box = (ColliderBox*)coll;
                 Vector4 color = (box->VisibilityFlags & 1) != 0 ? new(1, 0, 0, 0.7f) : new(0, 1, 0, 0.7f);
-                var pos = new Vector3(box->World.Row3.X, MeWorldPos.Y + 0.1f, box->World.Row3.Z);
-                if (pos.Distance2D(MeWorldPos) < 50f)
+                var pos = new Vector3(box->World.Row3.X, Player.Position.Y + 0.1f, box->World.Row3.Z);
+                if (pos.Distance2D(Player.Position) < 50f)
                 {
                     Svc.GameGui.WorldToScreen(pos, out var screenPos);
                     {
@@ -50,7 +50,7 @@ public class ColliderBoxService(DeepDungeonService dds)
 
     public unsafe void Update()
     {
-        if (!deepDungeonService.HasRadar)
+        if (!deepDungeonService.IsRadarReady)
             return;
         try
         {
@@ -60,7 +60,7 @@ public class ColliderBoxService(DeepDungeonService dds)
                     continue;
                 ColliderBoxes[((ColliderBox*)coll)->World.Row3] = (MathF.Abs(((ColliderBox*)coll)->Rotation.Y) > 1.5f, (coll->VisibilityFlags & 1) == 1);
             }
-            ReadyToCheat = true;
+            IsCheatReady = true;
         }
         catch (Exception ex)
         {
@@ -95,12 +95,12 @@ public class ColliderBoxService(DeepDungeonService dds)
             Cheated = false;
         }
         ColliderBoxes.Clear();
-        ReadyToCheat = false;
+        IsCheatReady = false;
     }
 
     public unsafe void Cheat()
     {
-        if (!ReadyToCheat)
+        if (!IsCheatReady)
             return;
         try
         {

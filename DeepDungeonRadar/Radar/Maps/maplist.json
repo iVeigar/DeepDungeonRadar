@@ -157,6 +157,13 @@
             "MaxBoundsX": 448.0,
             "MaxBoundsZ": -151.5,
             "Filename": "e3c1.2.bmp"
+        },
+                {
+            "MinBoundsX": 193.5,
+            "MinBoundsZ": 223.0,
+            "MaxBoundsX": 406.0,
+            "MaxBoundsZ": 377.0,
+            "Filename": "e3c1.3.bmp"
         }
     ],
     "e3c2": [

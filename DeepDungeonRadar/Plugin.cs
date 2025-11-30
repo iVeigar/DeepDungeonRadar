@@ -20,6 +20,7 @@ public sealed class Plugin : IDalamudPlugin
     private readonly ColliderBoxService colliderBoxService;
     private readonly MapService mapService;
     public static Configuration Config { get; private set; }
+
     public Plugin(IDalamudPluginInterface pi)
     {
         ECommonsMain.Init(pi, this);
@@ -29,8 +30,7 @@ public sealed class Plugin : IDalamudPlugin
         deepDungeonService = new();
         colliderBoxService = new(deepDungeonService);
         mapService = new(deepDungeonService, colliderBoxService);
-        deepDungeonService.OnTerritoryChange(Svc.ClientState.TerritoryType);
-
+        Svc.Framework.RunOnFrameworkThread(() => ToggleRadar(Config.RadarEnabled));
         radarWindow = new(deepDungeonService, mapService);
         configWindow = new(this);
         WindowSystem.AddWindow(configWindow);
@@ -53,7 +53,7 @@ public sealed class Plugin : IDalamudPlugin
         {
             Config.RadarEnabled ^= true;
             Config.Save();
-            ToggleRadar();
+            ToggleRadar(Config.RadarEnabled);
         }
         else if (args == "cheat")
         {
@@ -61,12 +61,12 @@ public sealed class Plugin : IDalamudPlugin
         }
     }
 
-    public void ToggleRadar()
+    public void ToggleRadar(bool enabled)
     {
-        if (Config.RadarEnabled)
+        if (enabled)
         {
             mapService.RegisterEvents();
-            if (deepDungeonService.HasRadar)
+            if (deepDungeonService.IsRadarReady)
                 mapService.OnEnteredNewFloor();
         }
         else

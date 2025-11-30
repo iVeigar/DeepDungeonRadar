@@ -47,7 +47,7 @@ public sealed class ConfigWindow : Window
 
         if (ImGui.Checkbox("启用小地图", ref config.RadarEnabled))
         {
-            plugin.ToggleRadar();
+            plugin.ToggleRadar(config.RadarEnabled);
         }
         ImGui.Spacing();
         ImGui.Separator();
