@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using Dalamud.Game.ClientState.Conditions;
 using ECommons.DalamudServices;
 using ECommons.EzHookManager;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
-
+using RoomFlags = FFXIVClientStructs.FFXIV.Client.Game.InstanceContent.InstanceContentDeepDungeon.RoomFlags;
 namespace DeepDungeonRadar.Radar;
 
 public sealed partial class DeepDungeonService : IDisposable
@@ -27,7 +28,6 @@ public sealed partial class DeepDungeonService : IDisposable
     public int CurrentFloor { get; private set; }
     public bool AccursedHoardOpened { get; private set; }
     public bool FloorTransfer { get; private set; } = true;
-
     public DeepDungeonService()
     {
         EzSignatureHelper.Initialize(this);
@@ -90,6 +90,22 @@ public sealed partial class DeepDungeonService : IDisposable
                 AccursedHoardOpened = true;
                 break;
         }
+    }
+
+    public unsafe List<int> GetPassageRooms()
+    {
+        var rooms = new List<int>();
+        var dd = EventFramework.Instance()->GetInstanceContentDeepDungeon();
+        if (dd == null)
+            return rooms;
+        for (int i = 0; i < 25; i++)
+        {
+            if (dd->MapData[i].HasFlag(RoomFlags.Passage))
+            {
+                rooms.Add(i);
+            }
+        }
+        return rooms;
     }
 
     public void Dispose()

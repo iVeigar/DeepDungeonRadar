@@ -3,7 +3,7 @@ using DeepDungeonRadar.Utils;
 using ECommons.Configuration;
 namespace DeepDungeonRadar.Config;
 
-public record struct Marker(uint Color, uint StrokeColor = Color.Black, bool ShowName = true, int Priority = 0)
+public struct Marker(uint Color, uint StrokeColor = Color.Black, bool ShowName = true, int Priority = 0)
 {
     public uint Color = Color; 
     public uint StrokeColor = StrokeColor;
@@ -38,6 +38,7 @@ public class Configuration : IPluginConfiguration
     public uint ReachableAreaBorderColor = 0xE0FDE888;
     public uint ReachableAreaBackgroundColor = 0xE0505050;
     public uint RadarSenseCircleOutlineColor = Color.Grey;
+    public float RadarPassageArrowScale = 1.0f;
     public bool ShowColliderBoxDot = true;
     public bool RemoveNamePrefix = false;
     public string NamePrefixes = "地宫\n深宫\n天之\n正统\n交错路\n得到宽恕的\n召引";

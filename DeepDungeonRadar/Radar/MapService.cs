@@ -33,7 +33,7 @@ public sealed class MapService : IDisposable
         public Vector2 BottomRight = MaxBounds + ExtendedSize * new Vector2(0.5f, 0.5f);
         public Vector2 TopRight = new Vector2(MaxBounds.X, MinBounds.Y) + ExtendedSize * new Vector2(0.5f, -0.5f);
         public Vector2 BottomLeft = new Vector2(MinBounds.X, MaxBounds.Y) + ExtendedSize * new Vector2(-0.5f, 0.5f);
-        public string Filename = Filename;
+        public bool IsHallofFallacies = Filename.EndsWith(".3.bmp");
         public bool Contains(Vector3 p) => p.X >= TopLeft.X && p.Z >= TopLeft.Y && p.X <= BottomRight.X && p.Z <= BottomRight.Y;
         public bool Contains(Vector2 p) => p.X >= TopLeft.X && p.Y >= TopLeft.Y && p.X <= BottomRight.X && p.Y <= BottomRight.Y;
     }
@@ -44,6 +44,7 @@ public sealed class MapService : IDisposable
     private readonly List<(MapInfo info, Bmp1pp data)> loadedMaps = [];
 
     public (MapInfo Info, Bmp1pp BitMap) CurrentMap { get; private set; }
+    public List<Vector2> PassagePosition { get; private set; }
     private SKBitmap processedMap;
     private Vector2 spawnPoint;
     public IDalamudTextureWrap ColoredMapTexture { get; private set; }
@@ -278,13 +279,15 @@ public sealed class MapService : IDisposable
             Svc.Log.Warning($"Current map is default, cannot process map");
             return;
         }
+
+        // 处理位图数据
         var srcData = CurrentMap.BitMap;
         processedMap?.Dispose();
         processedMap = new(srcData.Width + 2 * ExtendedSize, srcData.Height + 2 * ExtendedSize, SKColorType.Bgra8888, SKAlphaType.Premul);
         var width = processedMap.Width;
         var height = processedMap.Height;
 
-        // 填充透明区域和地面和边界
+        // 填充透明区域和所有地面和边界
         var pixels = (uint*)processedMap.GetPixels();
         for (var y = ExtendedSize; y < height - ExtendedSize; y++)
         {
@@ -509,7 +512,37 @@ public sealed class MapService : IDisposable
     private static Vector2 ReadVector2(JsonElement obj, string tag) => new(obj.GetProperty(tag + "X").GetSingle(), obj.GetProperty(tag + "Z").GetSingle());
 
     private static Stream GetEmbeddedResource(string name) => Assembly.GetExecutingAssembly().GetManifestResourceStream($"DeepDungeonRadar.Radar.Maps.{name}") ?? throw new InvalidDataException($"Missing embedded resource {name}");
-    
+
+    // 主要在Hall of Fallacies中使用，其他深宫地图只有一个传送门，不需要映射到房间索引
+    public int PositionToRoomIndex(Vector2 p)
+    {
+        if (CurrentMap == default || !CurrentMap.Info.Contains(p))
+            return 0;
+        var relativePos = (p - CurrentMap.Info.MinBounds) / (CurrentMap.Info.MaxBounds - CurrentMap.Info.MinBounds);
+        if (CurrentMap.Info.IsHallofFallacies)
+        {
+            var col = (int)(relativePos.X * 4);
+            var row = (int)(relativePos.Y * 3) + 1;
+            return row * 5 + col;
+        }
+        else
+        {
+            var col = (int)(relativePos.X * 5);
+            var row = (int)(relativePos.Y * 5);
+            return row * 5 + col;
+        }
+    }
+
+    // 房间索引转换为房间位置（房间不一定在切分出的格子的中心，这只是个大概位置，用于初步算出传送门的位置）
+    public Vector2 RoomIndexToPosition(int index)
+    {
+        if (CurrentMap == default)
+            return Vector2.Zero;
+        var iPos = new Vector2(index % 5, index / 5 - (CurrentMap.Info.IsHallofFallacies ? 1 : 0));
+        var relativePos = (iPos + new Vector2(0.5f, 0.5f)) / (CurrentMap.Info.IsHallofFallacies ? new Vector2(4, 3) : new Vector2(5, 5));
+        return CurrentMap.Info.MinBounds + relativePos * (CurrentMap.Info.MaxBounds - CurrentMap.Info.MinBounds);
+    }
+
     public void Dispose()
     {
         UnregisterEvents();

@@ -55,7 +55,12 @@ public sealed class ConfigWindow : Window
 
         generalSettingsChanged |= ImGui.Checkbox("固定指北", ref config.RadarOrientationFixed);
         generalSettingsChanged |= ImGui.Checkbox("鼠标穿透", ref config.RadarClickThrough);
-        generalSettingsChanged |= ImGui.Checkbox("锁定窗口位置和尺寸##RadarLockSizePos", ref config.RadarLockSizePos);
+        if (!config.RadarClickThrough)
+        {
+            ImGui.Indent();
+            generalSettingsChanged |= ImGui.Checkbox("锁定窗口位置和尺寸##RadarLockSizePos", ref config.RadarLockSizePos);
+            ImGui.Unindent();
+        }
         generalSettingsChanged |= ImGui.Checkbox("绘制不可达区域", ref config.RadarDrawUnreachable);
         generalSettingsChanged |= ImGui.Checkbox("显示碰撞盒标记点", ref config.ShowColliderBoxDot);
         ImGui.SameLine();
@@ -65,9 +70,12 @@ public sealed class ConfigWindow : Window
         ImGui.Spacing();
         if (ImGuiGroup.BeginGroupBox("小地图标记"))
         {
-            generalSettingsChanged |= ImGui.SliderFloat("标记点大小##RadarObjectDotSize", ref config.MarkerDotSize, 2f, 15f);
+
+            generalSettingsChanged |= ImGui.SliderFloat("传送门方位箭头大小##RadarPassageArrowScale", ref config.RadarPassageArrowScale, 0.1f, 10f);
             ImGui.Spacing();
-            generalSettingsChanged |= ImGui.Checkbox("移除怪物名称前缀", ref config.RemoveNamePrefix);
+            generalSettingsChanged |= ImGui.SliderFloat("实体标记点大小##RadarObjectDotSize", ref config.MarkerDotSize, 2f, 15f);
+            ImGui.Spacing();
+            generalSettingsChanged |= ImGui.Checkbox("移除实体名称前缀", ref config.RemoveNamePrefix);
             ImGui.Text("名称前缀");
             ImGui.SameLine();
             ImGuiComponents.HelpMarker("每行一个前缀");

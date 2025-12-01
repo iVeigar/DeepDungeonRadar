@@ -4,6 +4,7 @@ using System.Linq;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
+using Dalamud.Interface.Textures;
 using Dalamud.Interface.Windowing;
 using DeepDungeonRadar.Config;
 using DeepDungeonRadar.Data;
@@ -14,14 +15,14 @@ using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 
 namespace DeepDungeonRadar.Radar;
 
-public sealed class RadarWindow(DeepDungeonService deepDungeonService, MapService mapService) : Window("Deep Dungeon Radar Show", ImGuiWindowFlags.None)
+public sealed class RadarWindow : Window
 {
     private readonly Configuration config = Plugin.Config;
-    private readonly DeepDungeonService deepDungeonService = deepDungeonService;
-    private readonly MapService mapService = mapService;
-
+    private readonly DeepDungeonService deepDungeonService;
+    private readonly MapService mapService;
+    private readonly ISharedImmediateTexture Arrow = Svc.Texture.GetFromGameIcon(60541);
     private List<(Vector2 WorldPos, uint Color, uint StrokeColor, string Name, int Priority)> RadarDrawList { get; } = [];
-
+    private List<Vector2> PassageMarkers { get; } = [];
     private float UvZoom
     {
         get => config.RadarZoom;
@@ -34,6 +35,14 @@ public sealed class RadarWindow(DeepDungeonService deepDungeonService, MapServic
         }
     }
 
+    public RadarWindow(DeepDungeonService deepDungeonService, MapService mapService)
+        : base("Deep Dungeon Radar Show", ImGuiWindowFlags.None)
+    {
+        this.deepDungeonService = deepDungeonService;
+        this.mapService = mapService;
+        Size = new Vector2(360, 360);
+        SizeCondition = ImGuiCond.FirstUseEver;
+    }
     public override void PreOpenCheck()
     {
         IsOpen = config.RadarEnabled && deepDungeonService.IsRadarReady;
@@ -73,6 +82,7 @@ public sealed class RadarWindow(DeepDungeonService deepDungeonService, MapServic
         }
         ImGui.PopStyleColor();
         ImGui.PopStyleVar();
+        PassageMarkers.Clear();
         RadarDrawList.Clear();
     }
 
@@ -81,6 +91,7 @@ public sealed class RadarWindow(DeepDungeonService deepDungeonService, MapServic
         if (Svc.Objects == null)
             return;
 
+        var passages = deepDungeonService.GetPassageRooms();
         foreach (var o in Svc.Objects.Skip(1))
         {
             Marker markerCfg;
@@ -104,9 +115,22 @@ public sealed class RadarWindow(DeepDungeonService deepDungeonService, MapServic
                 else
                     continue;
             }
-            // todo 设置单刷时不显示再生装置
-            else if (o.IsPassage() || o.IsReturn())
+            else if (o.IsPassage())
             {
+                markerCfg = config.Markers.EventObj;
+                // 视野内的传送装置不显示箭头指示
+                if (passages.Count > 1)
+                {
+                    passages.Remove(mapService.PositionToRoomIndex(o.Position2D()));
+                }
+                else
+                {
+                    passages.Clear();
+                }
+            }
+            else if (o.IsReturn())
+            {
+                if (Svc.Party.Length == 0) continue;
                 markerCfg = config.Markers.EventObj;
             }
             else if (o.IsCandelabra())
@@ -147,19 +171,26 @@ public sealed class RadarWindow(DeepDungeonService deepDungeonService, MapServic
             RadarDrawList.Add((o.Position2D(), markerCfg.Color, markerCfg.StrokeColor, name, markerCfg.Priority));
         }
         RadarDrawList.Sort((a, b) => a.Priority.CompareTo(b.Priority));
+        foreach (var roomIdx in passages)
+        {
+            var position = mapService.RoomIndexToPosition(roomIdx);
+            if (position != default)
+            {
+                PassageMarkers.Add(position);
+            }
+        }
     }
 
     public unsafe override void Draw()
     {
         var camera = CameraManager.Instance()->CurrentCamera;
-        if (camera == null)
+        if (camera == null || !Player.Available)
             return;
-        if (Svc.ClientState.LocalPlayer == null)
-            return;
+
         var cameraRotation = MathF.Atan2(camera->ViewMatrix.M13, camera->ViewMatrix.M33);
-        var playerRotation = Svc.ClientState.LocalPlayer!.Rotation;
+        var playerRotation = Player.Rotation;
         var radarRotation = config.RadarOrientationFixed ? 0 : cameraRotation;
-        var radarRotationVec2 = radarRotation.ToNormalizedVector2();
+        var radarRotationVec2 = radarRotation.ToDirection();
 
         var windowSize = ImGui.GetWindowSize();
         var windowLeftTop = ImGui.GetWindowPos();
@@ -171,7 +202,7 @@ public sealed class RadarWindow(DeepDungeonService deepDungeonService, MapServic
         var windowDrawList = ImGui.GetWindowDrawList();
         windowDrawList.ChannelsSplit(3);
 
-        // Draw map
+        // 画地形图
         windowDrawList.ChannelsSetCurrent(0);
         if (mapService.IsMapReadyToDraw())
         {
@@ -184,7 +215,7 @@ public sealed class RadarWindow(DeepDungeonService deepDungeonService, MapServic
             );
         }
 
-        // Draw markers
+        // 画实体标记
         windowDrawList.ChannelsSetCurrent(1);
         foreach (var (worldpos, color, strokeColor, name, _) in RadarDrawList)
         {
@@ -199,9 +230,34 @@ public sealed class RadarWindow(DeepDungeonService deepDungeonService, MapServic
         windowDrawList.PathLineTo(windowCenter);
         windowDrawList.PathStroke(playerMarkerCfg.Color, ImDrawFlags.Closed, 1f);
 
+        // 画辅助圈
         windowDrawList.AddCircle(windowCenter, zoom * 80f, config.RadarSenseCircleOutlineColor, 100);
 
-        // Draw buttons
+        // 画传送装置方位箭头
+        var arrowTex = Arrow.GetWrapOrDefault();
+        if (arrowTex == null)
+            goto DrawButton;
+
+        var arrowScale = config.RadarPassageArrowScale;
+        var arrowSize = new Vector2(25, 25) * zoom * arrowScale;
+        var arrowCenter = meWindowPos + new Vector2(0, -80) * zoom;
+        var arrowLT = arrowCenter + arrowSize * new Vector2(-0.5f, -0.5f);
+        var arrowRT = arrowCenter + arrowSize * new Vector2(0.5f, -0.5f);
+        var arrowRB = arrowCenter + arrowSize * new Vector2(0.5f, 0.5f);
+        var arrowLB = arrowCenter + arrowSize * new Vector2(-0.5f, 0.5f);
+        foreach (var passageMarkerPos in PassageMarkers)
+        {
+            var rotation = radarRotation - (meWorldPos - passageMarkerPos).ToRad();
+            windowDrawList.AddImageQuad(arrowTex.Handle,
+                arrowLT.RotateAround(meWindowPos, rotation),
+                arrowRT.RotateAround(meWindowPos, rotation),
+                arrowRB.RotateAround(meWindowPos, rotation),
+                arrowLB.RotateAround(meWindowPos, rotation), 
+                config.Markers.EventObj.Color);
+        }
+
+        DrawButton:
+        // 画操作按钮
         windowDrawList.ChannelsSetCurrent(2);
         if (!config.RadarClickThrough)
         {

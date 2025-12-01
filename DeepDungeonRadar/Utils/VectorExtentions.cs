@@ -20,7 +20,7 @@ internal static class VectorExtensions
     public static Vector2 Zoom(this Vector2 vin, float zoom, Vector2 origin = default) => origin + (vin - origin) * zoom;
 
     public static Vector2 RotateAround(this Vector2 vin, Vector2 pivot, float rad)
-        => vin.RotateAround(pivot, rad.ToNormalizedVector2());
+        => vin.RotateAround(pivot, rad.ToDirection());
 
     // rotation must be a normalized vector
     public static Vector2 RotateAround(this Vector2 vin, Vector2 pivot, Vector2 rotation)
@@ -29,7 +29,13 @@ internal static class VectorExtensions
         return pivot + new Vector2(rotation.Y * diff.X - rotation.X * diff.Y, rotation.Y * diff.Y + rotation.X * diff.X);
     }
 
-    public static Vector2 ToNormalizedVector2(this float rad) => new(MathF.Sin(rad), MathF.Cos(rad));
+    public static float ToRad(this Vector2 dir) => MathF.Atan2(dir.X, dir.Y);
+
+    public static Vector2 ToDirection(this float rad)
+    {
+        var (sin, cos) = ((float, float))Math.SinCos(rad);
+        return new(sin, cos);
+    }
 
     public static Vector2 WorldToWindow(this Vector2 objWorldPos, Vector2 pivotWorldPos, Vector2 pivotWindowPos, float zoom, Vector2 rotation)
          => pivotWindowPos + ((objWorldPos - pivotWorldPos) * zoom).RotateAround(default, rotation);

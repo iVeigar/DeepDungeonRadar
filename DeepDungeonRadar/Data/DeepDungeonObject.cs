@@ -86,8 +86,10 @@ public static class DeepDungeonObject
 
     public static readonly HashSet<uint> KorriganNameIDs =
     [
-        // todo: 3506, 7610, 9806 are not tested yet
-        3506, 7610, 9806, 10309, 14267
+        5041, // 皮古迈欧
+        7610, // 柯瑞甘
+        10309, // 正统柯瑞甘
+        14267, // 交错路柯瑞甘
     ];
 
     public static readonly HashSet<uint> BronzeChestIDs =
