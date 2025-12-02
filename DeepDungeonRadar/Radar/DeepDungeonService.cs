@@ -35,34 +35,21 @@ public sealed partial class DeepDungeonService : IDisposable
         Svc.Condition.ConditionChange += OnConditionChanged;
     }
 
-    // 从外面进入深宫时 BetweenAreas -> true, InDeepDungeon -> true, BetweenAreas -> false
-    // 进入下一层时 BetweenAreas -> true, Occupied33 -> false, BetweenAreas -> false
-    // 退出深宫时 BetweenAreas -> true, InDeepDungeon -> false, BetweenAreas -> false
+    // Svc.Condition变化的时间顺序
+    // 1. 从外面进入深宫时 BetweenAreas -> true, InDeepDungeon -> true, BetweenAreas -> false(#1), 人物在圈圈里出现, Occupied33 -> true, Occupied33 -> false(#2), 使命开始. 在#1和#2处各检查一次
+    // 2. 进入下一层时 Occupied33 -> true(#1), BetweenAreas -> true(#2), Occupied33 -> false(#3), BetweenAreas -> false(#4). 在#1处有系统提示“成功进行了传送”，且需要在#2之前还原碰撞盒所以不能在#2处检查；在#4后人物位置才更新，所以不要在#3处检查，而是在#4处检查
+    // 3. 退出深宫时 BetweenAreas -> true, InDeepDungeon -> false, BetweenAreas -> false(#1). 在#1处检查出本即可
     public unsafe void OnConditionChanged(ConditionFlag flag, bool value)
     {
         if (flag == ConditionFlag.BetweenAreas && !value)
         {
             if (Svc.Condition[ConditionFlag.InDeepDungeon])
             {
-                var dd = EventFramework.Instance()->GetInstanceContentDeepDungeon();
-                if (dd != null && dd->ContentId != 60052)
-                {
-                    if (!InDeepDungeon)
-                    {
-                        InPotD = dd->DeepDungeonId == 1;
-                        InHoH = dd->DeepDungeonId == 2;
-                        InEO = dd->DeepDungeonId == 3;
-                        InPT = dd->DeepDungeonId == 4;
-                    }
-                    FloorTransfer = false;
-                    AccursedHoardOpened = false;
-                    CurrentFloor = dd->Floor;
-                    Svc.Log.Debug($"Entered new floor #{CurrentFloor}");
-                    EnteredNewFloor?.Invoke();
-                }
+                CheckEnteredNewFloor(flag);
             }
             else if (InDeepDungeon)
             {
+                // 3#1
                 InPotD = InHoH = InEO = InPT = AccursedHoardOpened = false;
                 CurrentFloor = 0;
                 FloorTransfer = true;
@@ -70,7 +57,46 @@ public sealed partial class DeepDungeonService : IDisposable
                 ExitingCurrentFloor?.Invoke(true);
             }
         }
+        if (flag == ConditionFlag.Occupied33 && !value)
+        {
+            if (Svc.Condition[ConditionFlag.InDeepDungeon])
+            {
+                CheckEnteredNewFloor(flag);
+            }
+        }
     } 
+
+    private unsafe void CheckEnteredNewFloor(ConditionFlag flag)
+    {
+        var dd = EventFramework.Instance()->GetInstanceContentDeepDungeon();
+        if (dd == null || dd->Floor == 0 && dd->ContentId == 60052)
+            return;
+
+        bool trigger = false;
+        // 1#1, 1#2
+        if (!InDeepDungeon)
+        {
+            InPotD = dd->DeepDungeonId == 1;
+            InHoH = dd->DeepDungeonId == 2;
+            InEO = dd->DeepDungeonId == 3;
+            InPT = dd->DeepDungeonId == 4;
+            trigger = true;
+        }
+        // 2#4
+        else if (flag == ConditionFlag.BetweenAreas)
+        {
+            trigger = true;
+        }
+
+        if (trigger)
+        {
+            FloorTransfer = false;
+            AccursedHoardOpened = false;
+            CurrentFloor = dd->Floor;
+            Svc.Log.Debug($"Entered new floor #{CurrentFloor}");
+            EnteredNewFloor?.Invoke();
+        }
+    }
 
     private unsafe void SystemLogMessageDetour(uint entityId, uint logId, int* args, byte argCount)
     {
@@ -80,7 +106,7 @@ public sealed partial class DeepDungeonService : IDisposable
 
         switch (logId)
         {
-            case 7248:
+            case 7248: // 2#1
                 Svc.Log.Debug("Exiting current floor..");
                 FloorTransfer = true;
                 ExitingCurrentFloor?.Invoke(false);
