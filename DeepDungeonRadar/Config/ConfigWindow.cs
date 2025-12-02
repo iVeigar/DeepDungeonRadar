@@ -94,7 +94,7 @@ public sealed class ConfigWindow : Window
         ImGui.SameLine();
         ImGui.Text("辅助圈");
         ImGui.SameLine();
-        ImGuiComponents.HelpMarker("半径80m，主要用于找传送门和宝藏。\n99.9%概率它们会在进入辅助圈范围前就被标记");
+        ImGuiComponents.HelpMarker("半径80m，游戏对象基本上会在进入范围前就显示在雷达上\n可以用这个特性快速寻宝、找烛台");
         
         ImGui.Separator();
 

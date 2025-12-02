@@ -69,7 +69,7 @@ public sealed partial class DeepDungeonService : IDisposable
     private unsafe void CheckEnteredNewFloor(ConditionFlag flag)
     {
         var dd = EventFramework.Instance()->GetInstanceContentDeepDungeon();
-        if (dd == null || dd->Floor == 0 && dd->ContentId == 60052)
+        if (dd == null || dd->Floor == 0 || dd->ContentId == 60052)
             return;
 
         bool trigger = false;

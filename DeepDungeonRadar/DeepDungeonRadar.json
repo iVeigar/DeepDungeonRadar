@@ -8,5 +8,5 @@
     "CategoryTags": [ "utility" ],
     "AcceptsFeedback": true,
     "RepoUrl": "https://github.com/iVeigar/DeepDungeonRadar",
-    "Changelog": ""
+    "Changelog": "fix: x1层有时不画图"
 }
