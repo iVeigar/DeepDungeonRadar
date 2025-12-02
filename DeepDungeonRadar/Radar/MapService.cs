@@ -34,8 +34,7 @@ public sealed class MapService : IDisposable
         public Vector2 TopRight = new Vector2(MaxBounds.X, MinBounds.Y) + ExtendedSize * new Vector2(0.5f, -0.5f);
         public Vector2 BottomLeft = new Vector2(MinBounds.X, MaxBounds.Y) + ExtendedSize * new Vector2(-0.5f, 0.5f);
         public bool IsHallofFallacies = Filename.EndsWith(".3.bmp");
-        public bool Contains(Vector3 p) => p.X >= TopLeft.X && p.Z >= TopLeft.Y && p.X <= BottomRight.X && p.Z <= BottomRight.Y;
-        public bool Contains(Vector2 p) => p.X >= TopLeft.X && p.Y >= TopLeft.Y && p.X <= BottomRight.X && p.Y <= BottomRight.Y;
+        public bool Contains(Vector2 p) => p.InRect(TopLeft, BottomRight);
     }
 
     private readonly DeepDungeonService deepDungeonService;
@@ -329,7 +328,7 @@ public sealed class MapService : IDisposable
         // 根据ColliderBoxManager中的墙体位置，沿着墙体方向向两侧扩展，直到遇到已经标记为墙体边界的像素为止
         foreach (var (wallPos, (vertical, blocked)) in colliderBoxService.ColliderBoxes)
         {
-            if (!blocked || !CurrentMap.Info.Contains(wallPos))
+            if (!blocked || !CurrentMap.Info.Contains(wallPos.ToVector2()))
                 continue;
             var wallPixelPos = (wallPos.ToVector2() - CurrentMap.Info.TopLeft) * 2f;
             var wallX = (int)wallPixelPos.X;

@@ -39,4 +39,6 @@ internal static class VectorExtensions
 
     public static Vector2 WorldToWindow(this Vector2 objWorldPos, Vector2 pivotWorldPos, Vector2 pivotWindowPos, float zoom, Vector2 rotation)
          => pivotWindowPos + ((objWorldPos - pivotWorldPos) * zoom).RotateAround(default, rotation);
+
+    public static bool InRect(this Vector2 p, Vector2 vmin, Vector2 vmax) => p.X >= vmin.X && p.Y >= vmin.Y && p.X <= vmax.X && p.Y <= vmax.Y;
 }

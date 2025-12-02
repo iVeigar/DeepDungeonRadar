@@ -118,15 +118,10 @@ public sealed class RadarWindow : Window
             else if (o.IsPassage())
             {
                 markerCfg = config.Markers.EventObj;
-                // 视野内的传送装置不显示箭头指示
-                if (passages.Count > 1)
-                {
-                    passages.Remove(mapService.PositionToRoomIndex(o.Position2D()));
-                }
-                else
-                {
-                    passages.Clear();
-                }
+                // 视野内的传送装置使用精确位置画箭头
+                passages.Remove(mapService.PositionToRoomIndex(o.Position2D()));
+                PassageMarkers.Add(o.Position2D());
+
             }
             else if (o.IsReturn())
             {
@@ -173,6 +168,7 @@ public sealed class RadarWindow : Window
         RadarDrawList.Sort((a, b) => a.Priority.CompareTo(b.Priority));
         foreach (var roomIdx in passages)
         {
+            // 视野外的传送装置使用所在房间的大概位置画箭头
             var position = mapService.RoomIndexToPosition(roomIdx);
             if (position != default)
             {
@@ -219,7 +215,7 @@ public sealed class RadarWindow : Window
         windowDrawList.ChannelsSetCurrent(1);
         foreach (var (worldpos, color, strokeColor, name, _) in RadarDrawList)
         {
-            var pos = worldpos.WorldToWindow(Player.Position.ToVector2(), windowCenter, zoom, radarRotationVec2);
+            var pos = worldpos.WorldToWindow(meWorldPos, windowCenter, zoom, radarRotationVec2);
             windowDrawList.DrawDotWithText(pos, name, color, strokeColor);
         }
 
@@ -245,9 +241,11 @@ public sealed class RadarWindow : Window
         var arrowRT = arrowCenter + arrowSize * new Vector2(0.5f, -0.5f);
         var arrowRB = arrowCenter + arrowSize * new Vector2(0.5f, 0.5f);
         var arrowLB = arrowCenter + arrowSize * new Vector2(-0.5f, 0.5f);
-        foreach (var passageMarkerPos in PassageMarkers)
+        foreach (var passagePos in PassageMarkers)
         {
-            var rotation = radarRotation - (meWorldPos - passageMarkerPos).ToRad();
+            if (passagePos.Distance(meWorldPos) < 80f)
+                continue;
+            var rotation = radarRotation - (meWorldPos - passagePos).ToRad();
             windowDrawList.AddImageQuad(arrowTex.Handle,
                 arrowLT.RotateAround(meWindowPos, rotation),
                 arrowRT.RotateAround(meWindowPos, rotation),
