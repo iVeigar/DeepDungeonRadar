@@ -33,12 +33,11 @@ public class ColliderBoxService(DeepDungeonService deepDungeonService)
                 var pos = new Vector3(box->World.Row3.X, Player.Position.Y + 0.1f, box->World.Row3.Z);
                 if (pos.Distance2D(Player.Position) < 50f)
                 {
-                    Svc.GameGui.WorldToScreen(pos, out var screenPos);
+                    var inView = Svc.GameGui.WorldToScreen(pos, out var screenPos);
+                    if (inView)
                     {
                         ImGui.GetBackgroundDrawList().AddCircleFilled(screenPos, 10f, ImGui.ColorConvertFloat4ToU32(color));
-
                     }
-
                 }
             }
         }
