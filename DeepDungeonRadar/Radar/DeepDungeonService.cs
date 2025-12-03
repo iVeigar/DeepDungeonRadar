@@ -35,21 +35,37 @@ public sealed partial class DeepDungeonService : IDisposable
         Svc.Condition.ConditionChange += OnConditionChanged;
     }
 
-    // Svc.Condition变化的时间顺序
-    // 1. 从外面进入深宫时 BetweenAreas -> true, InDeepDungeon -> true, BetweenAreas -> false(#1), 人物在圈圈里出现, Occupied33 -> true, Occupied33 -> false(#2), 使命开始. 在#1和#2处各检查一次
-    // 2. 进入下一层时 Occupied33 -> true(#1), BetweenAreas -> true(#2), Occupied33 -> false(#3), BetweenAreas -> false(#4). 在#1处有系统提示“成功进行了传送”，且需要在#2之前还原碰撞盒所以不能在#2处检查；在#4后人物位置才更新，所以不要在#3处检查，而是在#4处检查
-    // 3. 退出深宫时 BetweenAreas -> true, InDeepDungeon -> false, BetweenAreas -> false(#1). 在#1处检查出本即可
+    // Svc.Condition变化的时间顺序和各事件调用规则
+    //
+    // 1. 从外面进入深宫(此时this.InDeepDungeon=false): [BetweenAreas]=true -> [InDeepDungeon]=true -> [BetweenAreas]=false(#1) -> 人物在圈圈里出现 -> [Occupied33]=true -> [Occupied33]=false(#2) -> 使命开始
+    //      在#1和#2处各调用一次TryInvokeEnteredNewFloor() -> this.InDeepDungeon=true
+    //
+    // 2. 进入下一层时(此时this.InDeepDungeon=true): [Occupied33]=true(#1) -> [BetweenAreas]=true(#2) -> [Occupied33]=false(#3) -> [BetweenAreas]=false(#4)
+    //      在#1处有LogMessage"成功进行了传送"，且#2处无法还原碰撞盒，所以在#1处调用ExitingCurrentFloor(false)
+    //      在#4后人物位置才更新，所以在#4处调用TryInvokeEnteredNewFloor()
+    //
+    // 3. 退出深宫时(此时this.InDeepDungeon=true): [BetweenAreas]=true -> [InDeepDungeon]=false(#1) -> [BetweenAreas]=false(#2)
+    //      在#1处调用ExitingCurrentFloor(true) -> this.InDeepDungeon=false
     public unsafe void OnConditionChanged(ConditionFlag flag, bool value)
     {
-        if (flag == ConditionFlag.BetweenAreas && !value)
+        if (value) return;
+
+        if (flag == ConditionFlag.BetweenAreas)
         {
-            if (Svc.Condition[ConditionFlag.InDeepDungeon])
+            // 1#1, 2#4
+            TryInvokeEnteredNewFloor();
+        }
+        else if (flag == ConditionFlag.Occupied33)
+        {
+            // 1#2, no 2#3
+            if (!InDeepDungeon) 
+                TryInvokeEnteredNewFloor();
+        }
+        else if (flag == ConditionFlag.InDeepDungeon)
+        {
+            // 3#1
+            if (InDeepDungeon)
             {
-                CheckEnteredNewFloor(flag);
-            }
-            else if (InDeepDungeon)
-            {
-                // 3#1
                 InPotD = InHoH = InEO = InPT = AccursedHoardOpened = false;
                 CurrentFloor = 0;
                 FloorTransfer = true;
@@ -57,45 +73,28 @@ public sealed partial class DeepDungeonService : IDisposable
                 ExitingCurrentFloor?.Invoke(true);
             }
         }
-        if (flag == ConditionFlag.Occupied33 && !value)
-        {
-            if (Svc.Condition[ConditionFlag.InDeepDungeon])
-            {
-                CheckEnteredNewFloor(flag);
-            }
-        }
-    } 
+    }
 
-    private unsafe void CheckEnteredNewFloor(ConditionFlag flag)
+    private unsafe void TryInvokeEnteredNewFloor()
     {
+        if (!Svc.Condition[ConditionFlag.InDeepDungeon]) 
+            return;
         var dd = EventFramework.Instance()->GetInstanceContentDeepDungeon();
         if (dd == null || dd->Floor == 0 || dd->ContentId == 60052)
             return;
 
-        bool trigger = false;
-        // 1#1, 1#2
         if (!InDeepDungeon)
         {
             InPotD = dd->DeepDungeonId == 1;
             InHoH = dd->DeepDungeonId == 2;
             InEO = dd->DeepDungeonId == 3;
             InPT = dd->DeepDungeonId == 4;
-            trigger = true;
         }
-        // 2#4
-        else if (flag == ConditionFlag.BetweenAreas)
-        {
-            trigger = true;
-        }
-
-        if (trigger)
-        {
-            FloorTransfer = false;
-            AccursedHoardOpened = false;
-            CurrentFloor = dd->Floor;
-            Svc.Log.Debug($"Entered new floor #{CurrentFloor}");
-            EnteredNewFloor?.Invoke();
-        }
+        FloorTransfer = false;
+        AccursedHoardOpened = false;
+        CurrentFloor = dd->Floor;
+        Svc.Log.Debug($"Entered new floor #{CurrentFloor}");
+        EnteredNewFloor?.Invoke();
     }
 
     private unsafe void SystemLogMessageDetour(uint entityId, uint logId, int* args, byte argCount)
