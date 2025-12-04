@@ -2,6 +2,22 @@
 
 public static class Color // ImGui ABGR
 {
+    public static uint ToRgba(this uint color)
+    {
+        return ((color & 0xff) << 24)
+            | ((color & 0xff00) << 8)
+            | ((color & 0xff0000) >> 8)
+            | ((color & 0xff000000) >> 24);
+    }
+
+    public static uint ToArgb(this uint color)
+    {
+        return (color & 0xff000000)
+            | ((color & 0xff) << 16)
+            | (color & 0xff00)
+            | ((color & 0xff0000) >> 16);
+    }
+
     public const uint Red = 0xFF0000FF;
 
     public const uint Magenta = 0xFFFF00FF;

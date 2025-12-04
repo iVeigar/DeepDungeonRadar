@@ -446,7 +446,6 @@ public sealed class MapService : IDisposable
         var width = processedMap.Width;
         var height = processedMap.Height;
         var srcPixels = (uint*)processedMap.GetPixels();
-        // 配置文件的颜色格式是abgr, 与函数最后的RawImageSpecification.Rgba32(width, height)对应上了，所以不用转换颜色的字节顺序
         using var coloredMap = new SKBitmap(width, height, SKColorType.Rgba8888, SKAlphaType.Premul);
         var dstPixels = (uint*)coloredMap.GetPixels();
         // 填充可达区域和不可达区域背景色
@@ -468,7 +467,7 @@ public sealed class MapService : IDisposable
                 var paintUnreachableAreaBorder = new SKPaint
                 {
                     IsAntialias = true,
-                    Color = unreachableAreaBorderColor,
+                    Color = unreachableAreaBorderColor.ToArgb(),
                     MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Solid, 3)
                 };
                 for (var y = 0; y < height; y++)
@@ -485,7 +484,7 @@ public sealed class MapService : IDisposable
             var paintReachableAreaBorder = new SKPaint
             {
                 IsAntialias = true,
-                Color = reachableAreaBorderColor,
+                Color = reachableAreaBorderColor.ToArgb(),
                 MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Solid, 3)
             };
             for (int y = 0; y < height; y++)
@@ -502,7 +501,7 @@ public sealed class MapService : IDisposable
         Svc.Log.Debug($"Coloring finished");
 
         ColoredMapTexture = Svc.Texture.CreateFromRaw(
-            RawImageSpecification.Bgra32(width, height),
+            RawImageSpecification.Rgba32(width, height),
             new ReadOnlySpan<byte>((void*)coloredMap.GetPixels(), width * height * 4)
             );
         Svc.Log.Debug($"Built colored map texture for {CurrentMap.Info.Filename}");

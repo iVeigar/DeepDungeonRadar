@@ -35,9 +35,10 @@ public class Configuration : IPluginConfiguration
     public bool RadarDrawUnreachable = true;
     public uint UnreachableAreaBorderColor = 0x60808080;
     public uint UnreachableAreaBackgroundColor = 0x40202020;
-    public uint ReachableAreaBorderColor = 0xE0FDE888;
-    public uint ReachableAreaBackgroundColor = 0xE0505050;
+    public uint ReachableAreaBorderColor = 0xFA4291F4;
+    public uint ReachableAreaBackgroundColor = 0x80247291;
     public uint RadarSenseCircleOutlineColor = Color.Grey;
+    public uint RadarWindowBgColor = 0x60762622;
     public float RadarPassageArrowScale = 1.0f;
     public bool ShowColliderBoxDot = true;
     public bool RemoveNamePrefix = false;

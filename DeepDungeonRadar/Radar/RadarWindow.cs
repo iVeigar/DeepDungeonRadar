@@ -65,7 +65,7 @@ public sealed class RadarWindow : Window
             ImGui.PushStyleColor(ImGuiCol.Border, new Vector4(0, 0, 0, 1f));
         }
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
-        ImGui.PushStyleColor(ImGuiCol.WindowBg, Vector4.Zero);
+        ImGui.PushStyleColor(ImGuiCol.WindowBg, ImGui.ColorConvertU32ToFloat4(config.RadarWindowBgColor));
         ImGui.SetNextWindowSizeConstraints(new Vector2(150f, 150f), new Vector2(float.MaxValue, float.MaxValue), delegate (ImGuiSizeCallbackData* data)
         {
             var width = Math.Max(data->DesiredSize.X, data->DesiredSize.Y);
