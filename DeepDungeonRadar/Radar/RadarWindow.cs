@@ -101,16 +101,24 @@ public sealed class RadarWindow : Window
             }
             else if (o.IsMob(out var b))
             {
-                if (b.IsFriendly())
+                if (b.IsHelpfulNpc())
                 {
                     markerCfg = config.Markers.Friendly;
                     markerCfg.ShowName = true;
                 }
                 else if (!b.IsDead && b.IsTargetable)
                 {
-                    markerCfg = config.Markers.Enemy;
-                    if (b.IsMimic() || b.IsKerrigan())
+                    if (b.IsKerrigan())
+                    {
+                        markerCfg = config.Markers.Friendly;
                         markerCfg.ShowName = true;
+                    }
+                    else 
+                    {
+                        markerCfg = config.Markers.Enemy;
+                        if (b.IsMimic())
+                            markerCfg.ShowName = true;
+                    }
                 }
                 else
                     continue;
@@ -128,7 +136,7 @@ public sealed class RadarWindow : Window
                 if (Svc.Party.Length == 0) continue;
                 markerCfg = config.Markers.EventObj;
             }
-            else if (o.IsCandelabra())
+            else if (o.IsVotive())
             {
                 if (!o.IsTargetable) continue;
                 markerCfg = config.Markers.EventObj;

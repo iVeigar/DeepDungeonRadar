@@ -117,6 +117,9 @@ public sealed class ConfigWindow : Window
             ImGui.SameLine();
             ImGui.Text("不可达区域背景");
 
+            drawingSettingsChanged |= ImguiUtils.ColorPickerWithPalette(5, "地图窗口背景", ref config.RadarWindowBgColor);
+            ImGui.SameLine();
+            ImGui.Text("地图窗口背景");
             ImGuiGroup.EndGroupBox();
         }
         ImGui.Spacing();
@@ -124,7 +127,7 @@ public sealed class ConfigWindow : Window
         ImGui.Spacing();
         drawingSettingsChanged |= DrawMarkerConfig("玩家", "玩家", ref config.Markers.Player);
         drawingSettingsChanged |= DrawMarkerConfig("怪物", "怪物", ref config.Markers.Enemy);
-        drawingSettingsChanged |= DrawMarkerConfig("友好生物（天宫的狛犬、犬神、仙狸）", "友好生物", ref config.Markers.Friendly);
+        drawingSettingsChanged |= DrawMarkerConfig("友好生物和npc", "友好生物", ref config.Markers.Friendly);
         drawingSettingsChanged |= DrawMarkerConfig("装置（传送、再生、烛台）", "装置", ref config.Markers.EventObj);
         drawingSettingsChanged |= DrawMarkerConfig("金宝箱", "金宝箱", ref config.Markers.GoldChest);
         drawingSettingsChanged |= DrawMarkerConfig("银宝箱", "银宝箱", ref config.Markers.SilverChest);

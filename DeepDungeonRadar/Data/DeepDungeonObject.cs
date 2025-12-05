@@ -60,7 +60,7 @@ public static class DeepDungeonObject
     public const uint AccursedHoardCoffer = 2007543;
 
     // Pilgrimage's Traverse Candle Buffs
-    public const uint Candelabra = 2014759;
+    public const uint Votive = 2014759;
 
 
     public static readonly HashSet<uint> IgnoredDataIDs =
@@ -132,7 +132,7 @@ public static class DeepDungeonObject
         2014755
     ];
 
-    public static readonly HashSet<uint> FriendlyNameIDs =
+    public static readonly HashSet<uint> HelpfulNpcNameIDs =
     [
         // HoH
         7396, 7397, 7398,
@@ -161,13 +161,15 @@ public static class DeepDungeonObject
 
     public static bool IsKerrigan(this IBattleNpc bNpc) => KorriganNameIDs.Contains(bNpc.NameId);
 
-    public static bool IsFriendly(this IBattleNpc bNpc) => FriendlyNameIDs.Contains(bNpc.NameId);
+    public static bool IsHelpfulNpc(this IBattleNpc bNpc) => HelpfulNpcNameIDs.Contains(bNpc.NameId);
+
+    public static bool IsFriendly(this IBattleNpc bNpc) => bNpc.IsHelpfulNpc() || bNpc.IsKerrigan();
 
     public static bool IsPassage(this IGameObject obj) => PassageIDs.Contains(obj.BaseId);
 
     public static bool IsReturn(this IGameObject obj) => ReturnIDs.Contains(obj.BaseId);
 
-    public static bool IsCandelabra(this IGameObject obj) => Candelabra == obj.BaseId;
+    public static bool IsVotive(this IGameObject obj) => Votive == obj.BaseId;
 
     public static bool IsBronzeChest(this IGameObject obj) => BronzeChestIDs.Contains(obj.BaseId);
 
