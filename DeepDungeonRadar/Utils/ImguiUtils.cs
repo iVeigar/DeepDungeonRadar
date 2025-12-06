@@ -6,7 +6,7 @@ using Dalamud.Interface.Utility;
 
 namespace DeepDungeonRadar.Utils;
 
-internal static class ImguiUtils
+public static partial class ImGuiUtils
 {
     public static bool ColorPickerWithPalette(int id, string label, ref uint originalColor, ImGuiColorEditFlags flags = ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.AlphaPreview)
     {
@@ -71,10 +71,25 @@ internal static class ImguiUtils
         drawList.AddText(pos, color, text);
     }
 
-    public static void DrawDotWithText(this ImDrawListPtr drawList, Vector2 pos, string str, uint color, uint strokeColor)
+    public static void DrawDotWithText(this ImDrawListPtr drawList, Vector2 pos, string str, uint color, uint strokeColor = Color.Black)
     {
         drawList.DrawText(pos, str, color, true, true, strokeColor);
         drawList.AddCircleFilled(pos, Plugin.Config.MarkerDotSize, color);
         drawList.AddCircle(pos, Plugin.Config.MarkerDotSize, strokeColor, 0, 1);
+    }
+
+    public static Matrix3x2 BuildTransformMatrix(Vector2 pivot, Vector2 position, Vector2 scale, float rot)
+    {
+        return Matrix3x2.CreateTranslation(-pivot)
+          * Matrix3x2.CreateScale(scale)
+          * Matrix3x2.CreateRotation(-rot) // yes -rot
+          * Matrix3x2.CreateTranslation(position);
+    }
+    public static Matrix3x2 BuildTransformMatrix(Vector2 pivot, Vector2 position, float scale, float rot)
+    {
+        return Matrix3x2.CreateTranslation(-pivot)
+          * Matrix3x2.CreateScale(scale)
+          * Matrix3x2.CreateRotation(-rot) // yes -rot
+          * Matrix3x2.CreateTranslation(position);
     }
 }

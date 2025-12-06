@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Numerics;
+using System.Linq;
 using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Plugin.Services;
 using ECommons.DalamudServices;
 using ECommons.EzHookManager;
+using ECommons.GameHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using RoomFlags = FFXIVClientStructs.FFXIV.Client.Game.InstanceContent.InstanceContentDeepDungeon.RoomFlags;
 namespace DeepDungeonRadar.Radar;
@@ -28,6 +32,9 @@ public sealed partial class DeepDungeonService : IDisposable
     public int CurrentFloor { get; private set; }
     public bool AccursedHoardOpened { get; private set; }
     public bool FloorTransfer { get; private set; } = true;
+    public bool ReturnActivated { get; private set; }
+    public bool PassageActivated { get; private set; }
+    public Vector3 LandingPosition { get; private set; }
     public DeepDungeonService()
     {
         EzSignatureHelper.Initialize(this);
@@ -66,7 +73,7 @@ public sealed partial class DeepDungeonService : IDisposable
             // 3#1
             if (InDeepDungeon)
             {
-                InPotD = InHoH = InEO = InPT = AccursedHoardOpened = false;
+                InPotD = InHoH = InEO = InPT = AccursedHoardOpened = ReturnActivated = PassageActivated = false;
                 CurrentFloor = 0;
                 FloorTransfer = true;
                 Svc.Log.Debug($"Exited deep dungeon");
@@ -90,9 +97,9 @@ public sealed partial class DeepDungeonService : IDisposable
             InEO = dd->DeepDungeonId == 3;
             InPT = dd->DeepDungeonId == 4;
         }
-        FloorTransfer = false;
-        AccursedHoardOpened = false;
+        FloorTransfer = AccursedHoardOpened = ReturnActivated = PassageActivated = false;
         CurrentFloor = dd->Floor;
+        LandingPosition = Player.Position;
         Svc.Log.Debug($"Entered new floor #{CurrentFloor}");
         EnteredNewFloor?.Invoke();
     }
@@ -105,6 +112,13 @@ public sealed partial class DeepDungeonService : IDisposable
 
         switch (logId)
         {
+            case 7245: // xxxx启动了！
+                var dataId = (uint)args[0];
+                if (DeepDungeonData.ReturnIds.Contains(dataId))
+                    ReturnActivated = true;
+                else if (DeepDungeonData.PassageIds.Contains(dataId))
+                    PassageActivated = true;
+                break;
             case 7248: // 2#1
                 Svc.Log.Debug("Exiting current floor..");
                 FloorTransfer = true;
@@ -113,6 +127,9 @@ public sealed partial class DeepDungeonService : IDisposable
             case 7275:
             case 7276:
                 AccursedHoardOpened = true;
+                break;
+            case 9208: // DeepDungeonMagicStone // todo 用了魔石后没有7245消息，假设两个装置会全都开
+                ReturnActivated = PassageActivated = true;
                 break;
         }
     }

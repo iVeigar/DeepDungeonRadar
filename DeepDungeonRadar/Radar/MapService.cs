@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Dalamud.Interface.Textures;
 using Dalamud.Interface.Textures.TextureWraps;
 using DeepDungeonRadar.Config;
-using DeepDungeonRadar.Data;
 using DeepDungeonRadar.Utils;
 using ECommons.DalamudServices;
 using ECommons.GameHelpers;
@@ -45,7 +44,6 @@ public sealed class MapService : IDisposable
     public (MapInfo Info, Bmp1pp BitMap) CurrentMap { get; private set; }
     public List<Vector2> PassagePosition { get; private set; }
     private SKBitmap processedMap;
-    private Vector2 spawnPoint;
     public IDalamudTextureWrap ColoredMapTexture { get; private set; }
 
     // state
@@ -153,7 +151,6 @@ public sealed class MapService : IDisposable
     public void OnEnteredNewFloor()
     {
         colliderBoxService.Update();
-        spawnPoint = Player.Position.ToVector2();
         TaskLoadMap();
     }
 
@@ -234,10 +231,11 @@ public sealed class MapService : IDisposable
             Svc.Log.Warning($"Map not found for [{bg}]");
             return false;
         }
-        CurrentMap = Find(spawnPoint);
+        var landing = deepDungeonService.LandingPosition.ToVector2();
+        CurrentMap = Find(landing);
         if (CurrentMap == default)
         {
-            Svc.Log.Warning($"Map not found for starting position {spawnPoint} on [{bg}]");
+            Svc.Log.Warning($"Map not found for landing position {landing} on [{bg}]");
             return false;
         }
         Svc.Log.Debug($"Loaded map for [{bg}]");
@@ -382,7 +380,7 @@ public sealed class MapService : IDisposable
             return startX < 0 || startY < 0 || startX >= width || startY >= height || pixels[startX + startY * width] != PixelType.UnreachableArea;
         }
 
-        var startPoint = spawnPoint;
+        var startPoint = deepDungeonService.LandingPosition.ToVector2();
         // 泛洪填充算法，将spawnPoint所在区域填充为通路，遇到边界后把边界改为可达边界
         // 边界检查
         if (IsInvalidStartPoint(startPoint, CurrentMap.Info.TopLeft, pixels, width, height))

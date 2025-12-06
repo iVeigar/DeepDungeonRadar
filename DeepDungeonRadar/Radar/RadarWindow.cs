@@ -4,10 +4,9 @@ using System.Linq;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
-using Dalamud.Interface.Textures;
+using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
 using DeepDungeonRadar.Config;
-using DeepDungeonRadar.Data;
 using DeepDungeonRadar.Utils;
 using ECommons.DalamudServices;
 using ECommons.GameHelpers;
@@ -20,10 +19,23 @@ public sealed class RadarWindow : Window
     private readonly Configuration config = Plugin.Config;
     private readonly DeepDungeonService deepDungeonService;
     private readonly MapService mapService;
-    private readonly ISharedImmediateTexture Arrow = Svc.Texture.GetFromGameIcon(60541);
-    private List<(Vector2 WorldPos, uint Color, uint StrokeColor, string Name, int Priority)> RadarDrawList { get; } = [];
+    private readonly TexturePart ArrowIcon = new(60545);
+    private readonly TexturePart Return0MiniIcon = new(60905);
+    private readonly TexturePart Return10MiniIcon = new(60906);
+    private readonly TexturePart Passage0MiniIcon = new(60907);
+    private readonly TexturePart Passage10MiniIcon = new(60908);
+    private readonly TexturePart BronzeChestIcon = new(60911);
+    private readonly TexturePart SilverChestIcon = new(60912);
+    private readonly TexturePart GoldChestIcon = new(60913);
+    private readonly TexturePart VotiveIcon = new(63988);
+    private readonly TexturePart HomeFlagTex = new("ui/uld/DeepDungeonNaviMap.tex", new(64, 64), new(32, 32), new(16, 16));
+    private readonly TexturePart FovConeTex = new("ui/uld/navimap.tex", new(352, 0), new(96, 96), new(18, 78));
+    private readonly TexturePart PlayerArrowTex = new("ui/uld/DeepDungeonNaviMap.tex", new(0, 64), new(32, 32), new(16, 19));
+    private readonly TexturePart TreasureGlowTex = new("ui/uld/navimap.tex", new(384, 120), new(40, 40), new(20, 20));
+    private readonly TexturePart AccursedHoardTex = new("ui/uld/DeepDungeonNaviMap.tex", new(108, 112), new(24, 28), new(11, 18));
+    private List<RadarObject> RadarObjList { get; } = [];
     private List<Vector2> PassageMarkers { get; } = [];
-    private float UvZoom
+    private float Zoom
     {
         get => config.RadarZoom;
         set
@@ -34,6 +46,16 @@ public sealed class RadarWindow : Window
             }
         }
     }
+
+    // drawing
+    private float cameraRotation;
+    private float playerRotation;
+    private float radarRotation;
+    private float radarScale;
+    private Vector2 meWorldPos;
+    private Vector2 meRadarPos;
+    private Matrix3x2 worldToRadarMatrix;
+    private ImDrawListPtr radarWindow;
 
     public RadarWindow(DeepDungeonService deepDungeonService, MapService mapService)
         : base("Deep Dungeon Radar Show", ImGuiWindowFlags.None)
@@ -83,7 +105,7 @@ public sealed class RadarWindow : Window
         ImGui.PopStyleColor();
         ImGui.PopStyleVar();
         PassageMarkers.Clear();
-        RadarDrawList.Clear();
+        RadarObjList.Clear();
     }
 
     public unsafe override void Update()
@@ -94,86 +116,18 @@ public sealed class RadarWindow : Window
         var passages = deepDungeonService.GetPassageRooms();
         foreach (var o in Svc.Objects.Skip(1))
         {
-            Marker markerCfg;
-            if (o.IsPlayer())
+            var radarObj = new RadarObject(o, deepDungeonService);
+            if (radarObj.Kind == RadarObject.RadarObjectKind.Passage)
             {
-                markerCfg = config.Markers.Player;
-            }
-            else if (o.IsMob(out var b))
-            {
-                if (b.IsHelpfulNpc())
-                {
-                    markerCfg = config.Markers.Friendly;
-                    markerCfg.ShowName = true;
-                }
-                else if (!b.IsDead && b.IsTargetable)
-                {
-                    if (b.IsKerrigan())
-                    {
-                        markerCfg = config.Markers.Friendly;
-                        markerCfg.ShowName = true;
-                    }
-                    else 
-                    {
-                        markerCfg = config.Markers.Enemy;
-                        if (b.IsMimic())
-                            markerCfg.ShowName = true;
-                    }
-                }
-                else
-                    continue;
-            }
-            else if (o.IsPassage())
-            {
-                markerCfg = config.Markers.EventObj;
                 // 视野内的传送装置使用精确位置画箭头
                 passages.Remove(mapService.PositionToRoomIndex(o.Position2D()));
                 PassageMarkers.Add(o.Position2D());
 
             }
-            else if (o.IsReturn())
-            {
-                if (Svc.Party.Length == 0) continue;
-                markerCfg = config.Markers.EventObj;
-            }
-            else if (o.IsVotive())
-            {
-                if (!o.IsTargetable) continue;
-                markerCfg = config.Markers.EventObj;
-            }
-            else if (o.IsGoldChest())
-            {
-                if (!o.IsTargetable) continue;
-                markerCfg = config.Markers.GoldChest;
-            }
-            else if (o.IsSilverChest())
-            {
-                if (!o.IsTargetable) continue;
-                markerCfg = config.Markers.SilverChest;
-            }
-            else if (o.IsBronzeChest())
-            {
-                if (o.IsChestOpenedOrFaded()) continue;
-                markerCfg = config.Markers.BronzeChest;
-            }
-            else if (o.IsMimicChest())
-            {
-                markerCfg = config.Markers.BronzeChest with { ShowName = true };
-            }
-            else if (o.IsAccursedHoard())
-            {
-                if (deepDungeonService.AccursedHoardOpened) continue;
-                markerCfg = config.Markers.AccursedHoard;
-            }
-            else
-            {
-                continue;
-            }
-
-            var name = markerCfg.ShowName ? o.GetDisplayName() : string.Empty;
-            RadarDrawList.Add((o.Position2D(), markerCfg.Color, markerCfg.StrokeColor, name, markerCfg.Priority));
+            if (radarObj.ShouldDraw())
+                RadarObjList.Add(radarObj);
         }
-        RadarDrawList.Sort((a, b) => a.Priority.CompareTo(b.Priority));
+        RadarObjList.Sort((a, b) => a.GetMarkerConfig().Priority.CompareTo(b.GetMarkerConfig().Priority));
         foreach (var roomIdx in passages)
         {
             // 视野外的传送装置使用所在房间的大概位置画箭头
@@ -185,109 +139,172 @@ public sealed class RadarWindow : Window
         }
     }
 
-    public unsafe override void Draw()
+    private unsafe bool UpdateRadarVars()
     {
         var camera = CameraManager.Instance()->CurrentCamera;
         if (camera == null || !Player.Available)
-            return;
+            return false;
 
-        var cameraRotation = MathF.Atan2(camera->ViewMatrix.M13, camera->ViewMatrix.M33);
-        var playerRotation = Player.Rotation;
-        var radarRotation = config.RadarOrientationFixed ? 0 : cameraRotation;
-        var radarRotationVec2 = radarRotation.ToDirection();
+        cameraRotation = MathF.Atan2(camera->ViewMatrix.M13, camera->ViewMatrix.M33);
+        playerRotation = Player.Rotation;
+        radarRotation = config.RadarOrientationFixed ? 0 : -cameraRotation;
 
         var windowSize = ImGui.GetWindowSize();
         var windowLeftTop = ImGui.GetWindowPos();
         var windowCenter = windowLeftTop + windowSize / 2;
-        var meWindowPos = windowCenter;
-        var meWorldPos = Player.Position.ToVector2();
-        var zoom = windowSize.X * UvZoom / 256f;
+        meRadarPos = windowCenter;
+        meWorldPos = Player.Position.ToVector2();
 
-        var windowDrawList = ImGui.GetWindowDrawList();
-        windowDrawList.ChannelsSplit(3);
+        radarScale = windowSize.X * Zoom / 256f;
 
+        worldToRadarMatrix = ImGuiUtils.BuildTransformMatrix(meWorldPos, meRadarPos, radarScale, radarRotation);
+        radarWindow = ImGui.GetWindowDrawList();
+        return true;
+    }
+
+    public override void Draw()
+    {
+        if (!UpdateRadarVars()) 
+            return;
         // 画地形图
-        windowDrawList.ChannelsSetCurrent(0);
-        if (mapService.IsMapReadyToDraw())
-        {
-            var info = mapService.CurrentMap.Info;
-            windowDrawList.AddImageQuad(mapService.ColoredMapTexture.Handle,
-                info.TopLeft.WorldToWindow(meWorldPos, meWindowPos, zoom, radarRotationVec2),
-                info.TopRight.WorldToWindow(meWorldPos, meWindowPos, zoom, radarRotationVec2),
-                info.BottomRight.WorldToWindow(meWorldPos, meWindowPos, zoom, radarRotationVec2),
-                info.BottomLeft.WorldToWindow(meWorldPos, meWindowPos, zoom, radarRotationVec2)
-            );
-        }
+        DrawFloorMap();
 
         // 画实体标记
-        windowDrawList.ChannelsSetCurrent(1);
-        foreach (var (worldpos, color, strokeColor, name, _) in RadarDrawList)
-        {
-            var pos = worldpos.WorldToWindow(meWorldPos, windowCenter, zoom, radarRotationVec2);
-            windowDrawList.DrawDotWithText(pos, name, color, strokeColor);
-        }
+        DrawRadarObjects();
 
-        var playerConeRad = radarRotation - cameraRotation - MathF.PI * 0.5f;
-        var playerMarkerCfg = config.Markers.Player;
-        windowDrawList.DrawDotWithText(windowCenter, playerMarkerCfg.ShowName ? "我" : null, playerMarkerCfg.Color, playerMarkerCfg.StrokeColor);
-        windowDrawList.PathArcTo(windowCenter, zoom * 25f, playerConeRad - MathF.PI * 0.25f, playerConeRad + MathF.PI * 0.25f, 24);
-        windowDrawList.PathLineTo(windowCenter);
-        windowDrawList.PathStroke(playerMarkerCfg.Color, ImDrawFlags.Closed, 1f);
-
-        // 画辅助圈
-        windowDrawList.AddCircle(windowCenter, zoom * 80f, config.RadarSenseCircleOutlineColor, 100);
+        // 画本地玩家
+        DrawLocalPlayer();
 
         // 画传送装置方位箭头
-        var arrowTex = Arrow.GetWrapOrDefault();
-        if (arrowTex == null)
-            goto DrawButton;
+        DrawPassagesRangeArrows();
 
-        var arrowScale = config.RadarPassageArrowScale;
-        var arrowSize = new Vector2(25, 25) * zoom * arrowScale;
-        var arrowCenter = meWindowPos + new Vector2(0, -80) * zoom;
-        var arrowLT = arrowCenter + arrowSize * new Vector2(-0.5f, -0.5f);
-        var arrowRT = arrowCenter + arrowSize * new Vector2(0.5f, -0.5f);
-        var arrowRB = arrowCenter + arrowSize * new Vector2(0.5f, 0.5f);
-        var arrowLB = arrowCenter + arrowSize * new Vector2(-0.5f, 0.5f);
-        foreach (var passagePos in PassageMarkers)
+        // 画操作按钮
+        HandleInputEvent();
+    }
+
+    private void DrawFloorMap()
+    {
+        if (!mapService.IsMapReadyToDraw())
+            return;
+        var info = mapService.CurrentMap.Info;
+        radarWindow.AddImageQuad(mapService.ColoredMapTexture.Handle,
+            info.TopLeft.Transform(worldToRadarMatrix),
+            info.TopRight.Transform(worldToRadarMatrix),
+            info.BottomRight.Transform(worldToRadarMatrix),
+            info.BottomLeft.Transform(worldToRadarMatrix)
+        );
+
+        HomeFlagTex.DrawOnWindow(
+            radarWindow,
+            deepDungeonService.LandingPosition.ToVector2().Transform(worldToRadarMatrix));
+    }
+
+    private void DrawRadarObjects()
+    {
+        foreach (var radarObj in RadarObjList)
         {
-            if (passagePos.Distance(meWorldPos) < 80f)
-                continue;
-            var rotation = radarRotation - (meWorldPos - passagePos).ToRad();
-            windowDrawList.AddImageQuad(arrowTex.Handle,
-                arrowLT.RotateAround(meWindowPos, rotation),
-                arrowRT.RotateAround(meWindowPos, rotation),
-                arrowRB.RotateAround(meWindowPos, rotation),
-                arrowLB.RotateAround(meWindowPos, rotation), 
-                config.Markers.EventObj.Color);
+            var pos = radarObj.Position2D.Transform(worldToRadarMatrix);
+            if (radarObj.ShowName())
+            radarWindow.DrawDotWithText(
+                pos,
+                radarObj.GetDisplayName(),
+                radarObj.GetMarkerConfig().Color);
+            else
+            {
+                switch (radarObj.Kind)
+                {
+                    case RadarObject.RadarObjectKind.Return:
+                        (deepDungeonService.ReturnActivated ? Return10MiniIcon : Return0MiniIcon).DrawOnWindow(radarWindow, pos, config.IconScales.EventObj);
+                        break;
+                    case RadarObject.RadarObjectKind.Passage:
+                        (deepDungeonService.PassageActivated ? Passage10MiniIcon : Passage0MiniIcon).DrawOnWindow(radarWindow, pos, config.IconScales.EventObj);
+                        break;
+                    case RadarObject.RadarObjectKind.Votive:
+                        VotiveIcon.DrawOnWindow(radarWindow, pos, config.IconScales.EventObj);
+                        break;
+                    case RadarObject.RadarObjectKind.BronzeChest:
+                        BronzeChestIcon.DrawOnWindow(radarWindow, pos, config.IconScales.Chest);
+                        break;
+                    case RadarObject.RadarObjectKind.SilverChest:
+                        SilverChestIcon.DrawOnWindow(radarWindow, pos, config.IconScales.Chest);
+                        break;
+                    case RadarObject.RadarObjectKind.GoldChest:
+                        GoldChestIcon.DrawOnWindow(radarWindow, pos, config.IconScales.Chest);
+                        break;
+                    case RadarObject.RadarObjectKind.AccursedHoard:
+                        TreasureGlowTex.DrawOnWindow(radarWindow, pos, config.IconScales.AccursedHoard, (Environment.TickCount % 1000) / 1000f * MathF.Tau);
+                        AccursedHoardTex.DrawOnWindow(radarWindow, pos, config.IconScales.AccursedHoard);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+    }
+
+    private void DrawLocalPlayer()
+    {
+        radarWindow.PathArcTo(meRadarPos, radarScale * 25f, -radarRotation - cameraRotation - MathF.PI * 0.75f, -radarRotation - cameraRotation - MathF.PI * 0.25f);
+        radarWindow.PathLineTo(meRadarPos);
+        radarWindow.PathStroke(config.Markers.Player.Color, ImDrawFlags.Closed, 1f);
+        //FovConeTex.DrawOnRadar(radarWindow, meRadarPos, Vector2.One, radarRotation + cameraRotation + 0.25f * MathF.PI);
+
+        if (config.RadarObjectUseIcons)
+        {
+            PlayerArrowTex.DrawOnWindow(radarWindow, meRadarPos, config.IconScales.LocalPlayer, playerRotation - MathF.PI + radarRotation);
+        }
+        else
+        {
+            radarWindow.DrawDotWithText(meRadarPos, "我", config.Markers.Player.Color);
         }
 
-        DrawButton:
-        // 画操作按钮
-        windowDrawList.ChannelsSetCurrent(2);
+        // 画辅助圈
+        radarWindow.AddCircle(meRadarPos, radarScale * 80f, config.RadarSenseCircleOutlineColor, 100);
+    }
+
+    private void DrawPassagesRangeArrows()
+    {
+        foreach (var passagePos in PassageMarkers)
+        {
+            var distance = passagePos.Distance(meWorldPos);
+            if (distance <= 80f)
+                continue;
+            var arrowRotation = (passagePos - meWorldPos).ToRotation();
+            var arrowWorldPos = meWorldPos + (passagePos - meWorldPos) * 80f / distance; // 画在圈上
+            ArrowIcon.DrawOnWindow(
+                radarWindow,
+                arrowWorldPos.Transform(worldToRadarMatrix),
+                new Vector2(config.IconScales.PassageArrow),
+                arrowRotation + radarRotation,
+                config.Markers.EventObj.Color);
+        }
+    }
+
+    private void HandleInputEvent()
+    {
         if (!config.RadarClickThrough)
         {
-            ImGui.SetCursorPos(new Vector2(5f, 5f));
+            ImGui.SetCursorPos(ImGuiHelpers.ScaledVector2(5f, 5f));
+            var iconSize = ImGuiHelpers.ScaledVector2(25f, 25f);
             var icon = config.RadarOrientationFixed ? FontAwesomeIcon.Crosshairs : FontAwesomeIcon.LocationArrow;
-            if (ImguiUtils.IconButton(icon, "ToggleSnap", new Vector2(25f, 25f)))
+            if (ImGuiUtils.IconButton(icon, "ToggleSnap", iconSize))
             {
                 config.RadarOrientationFixed ^= true;
             }
             ImGui.SetCursorPosX(5f);
-            if (ImguiUtils.IconButton(FontAwesomeIcon.PlusCircle, "zoom++", new Vector2(25f, 25f)))
+            if (ImGuiUtils.IconButton(FontAwesomeIcon.PlusCircle, "zoom++", iconSize))
             {
-                UvZoom += 0.1f;
+                Zoom += 0.1f;
             }
             ImGui.SetCursorPosX(5f);
-            if (ImguiUtils.IconButton(FontAwesomeIcon.MinusCircle, "zoom--", new Vector2(25f, 25f)))
+            if (ImGuiUtils.IconButton(FontAwesomeIcon.MinusCircle, "zoom--", iconSize))
             {
-                UvZoom -= 0.1f;
+                Zoom -= 0.1f;
             }
-        }
             if (ImGui.IsWindowHovered())
             {
-                UvZoom += ImGui.GetIO().MouseWheel * 0.1f;
+                Zoom += ImGui.GetIO().MouseWheel * 0.1f;
             }
-        windowDrawList.ChannelsMerge();
+        }
     }
 }
