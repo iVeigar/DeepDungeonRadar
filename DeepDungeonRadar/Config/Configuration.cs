@@ -10,11 +10,11 @@ public class Marker(uint Color, int Priority = 0)
 }
 public class IconScales
 {
-    public float EventObj = 1.0f;
-    public float Chest = 0.75f;
-    public float LocalPlayer = 1.4f;
-    public float AccursedHoard = 0.45f;
-    public float PassageArrow = 1.4f;
+    public float EventObj = 1f;
+    public float Chest = 1f;
+    public float LocalPlayer = 1f;
+    public float AccursedHoard = 1f;
+    public float PassageArrow = 1f;
 }
 public class ObjectMarkerConfig
 {

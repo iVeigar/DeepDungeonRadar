@@ -51,9 +51,10 @@ public static class DeepDungeonData
     // Pilgrimage's Traverse Candle Buffs
     public const uint VotiveId = 2014759;
 
-    public static readonly HashSet<uint> IgnoredIds =
+    public static readonly HashSet<uint> IgnoredIds =  // BaseId
     [
         6388, // Trap object at <0, 0>, or invisible triggered trap
+        15898, 15899 // 乌内N12321，多加N12320
     ];
 
     public static readonly HashSet<uint> MimicNameIds =

@@ -148,7 +148,7 @@ public class RadarObject
     {
         return Kind switch
         {
-            RadarObjectKind.BronzeChest => Obj.IsChestOpenedOrFaded(),
+            RadarObjectKind.BronzeChest => !Obj.IsChestOpenedOrFaded(),
             RadarObjectKind.SilverChest or RadarObjectKind.GoldChest or RadarObjectKind.Votive => Obj.IsTargetable,
             RadarObjectKind.Return => Svc.Party.Length > 1,
             RadarObjectKind.AccursedHoard => !DDS.AccursedHoardOpened,
