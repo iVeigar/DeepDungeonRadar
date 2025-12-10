@@ -47,8 +47,7 @@ public static class DeepDungeonData
 
     public const uint AccursedHoardId = 2007542;
     public const uint AccursedHoardCofferId = 2007543;
-    public const uint TriggeredTrapId = 6388;
-    // Pilgrimage's Traverse Candle Buffs
+    public const uint TriggeredTrapId = 6388; 
     public const uint VotiveId = 2014759;
 
     public static readonly HashSet<uint> IgnoredIds =  // BaseId
@@ -68,18 +67,6 @@ public static class DeepDungeonData
         7610, // 柯瑞甘
         10309, // 正统柯瑞甘
         14267, // 交错路柯瑞甘
-    ];
-
-    public static readonly HashSet<uint> BronzeChestIds =
-    [
-        // PotD
-        782, 783, 784, 785, 786, 787, 788, 789, 790, 802, 803, 804, 805,
-        // HoH
-        1036, 1037, 1038, 1039, 1040, 1041, 1042, 1043, 1044, 1045, 1046, 1047, 1048, 1049,
-        // EO
-        1541, 1542, 1543, 1544, 1545, 1546, 1547, 1548, 1549, 1550, 1551, 1552, 1553, 1554,
-        // PT
-        1881, 1882, 1883, 1884, 1885, 1886, 1887, 1888, 1889, 1890, 1891, 1892, 1893, 1906, 1907, 1908,
     ];
 
     public static readonly Dictionary<uint, string> TrapIds = new()
@@ -170,7 +157,7 @@ public static class DeepDungeonData
 
     public static bool IsVotive(this IGameObject obj) => VotiveId == obj.BaseId;
 
-    public static bool IsBronzeChest(this IGameObject obj) => BronzeChestIds.Contains(obj.BaseId);
+    public static bool IsBronzeChest(this IGameObject obj) => obj.ObjectKind == ObjectKind.Treasure;
 
     public static bool IsSilverChest(this IGameObject obj) => SilverChestId == obj.BaseId;
 

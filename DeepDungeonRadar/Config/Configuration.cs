@@ -50,7 +50,7 @@ public class Configuration : IPluginConfiguration
     public ObjectMarkerConfig Markers = new();
     public float MarkerDotSize = 4;
     public bool RemoveNamePrefix = false;
-    public string NamePrefixes = "地宫\n深宫\n天之\n正统\n交错路\n得到宽恕的\n召引";
+    public string NamePrefixes = "地宫\n噩梦之\n噩梦\n深宫\n天之\n正统\n交错路\n得到宽恕的\n召引";
 
     public bool ShowColliderBoxDot = true;
     public float RadarZoom = 1;

@@ -1,12 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Dalamud.CN.NET.Sdk/13.1.0">
     <PropertyGroup>
-        <Version>7.38.1.1</Version>
+        <Version>7.38.1.2</Version>
 		<LangVersion>preview</LangVersion>
 		<Nullable>annotations</Nullable>
 		<OutputPath>bin\$(Configuration)\</OutputPath>
 		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
 		<AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+		<GenerateDependencyFile>false</GenerateDependencyFile>
 	</PropertyGroup>
 
     <ItemGroup>

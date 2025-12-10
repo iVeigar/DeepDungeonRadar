@@ -120,7 +120,10 @@ public sealed class RadarWindow : Window
             if (radarObj.Kind == RadarObject.RadarObjectKind.Passage)
             {
                 // 视野内的传送装置使用精确位置画箭头
-                passages.Remove(mapService.PositionToRoomIndex(o.Position2D()));
+                if (passages.Count == 1)
+                    passages.Clear();
+                else
+                    passages.Remove(mapService.PositionToRoomIndex(o.Position2D()));
                 PassageMarkers.Add(o.Position2D());
 
             }
@@ -205,10 +208,10 @@ public sealed class RadarWindow : Window
         {
             var pos = radarObj.Position2D.Transform(worldToRadarMatrix);
             if (radarObj.ShowName())
-            radarWindow.DrawDotWithText(
-                pos,
-                radarObj.GetDisplayName(),
-                radarObj.GetMarkerConfig().Color);
+                radarWindow.DrawDotWithText(
+                    pos,
+                    radarObj.GetDisplayName(),
+                    radarObj.GetMarkerConfig().Color);
             else
             {
                 switch (radarObj.Kind)
