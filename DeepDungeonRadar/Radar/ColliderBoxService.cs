@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
-using DeepDungeonRadar.Utils;
 using ECommons.DalamudServices;
 using ECommons.GameHelpers;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
@@ -30,8 +29,8 @@ public class ColliderBoxService(DeepDungeonService deepDungeonService)
                     continue;
                 var box = (ColliderBox*)coll;
                 Vector4 color = (box->VisibilityFlags & 1) != 0 ? new(1, 0, 0, 0.7f) : new(0, 1, 0, 0.7f);
-                var pos = new Vector3(box->World.Row3.X, Player.Position.Y + 0.1f, box->World.Row3.Z);
-                if (pos.Distance2D(Player.Position) < 50f)
+                var pos = box->World.Row3 with { Y = Player.Position.Y };
+                if (Player.DistanceTo(pos) < 50f)
                 {
                     var inView = Svc.GameGui.WorldToScreen(pos, out var screenPos);
                     if (inView)

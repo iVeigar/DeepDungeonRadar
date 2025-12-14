@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Numerics;
 using Dalamud.Game.ClientState.Objects.Types;
 using DeepDungeonRadar.Config;
-using DeepDungeonRadar.Utils;
 using ECommons.DalamudServices;
+using ECommons.MathHelpers;
 using static DeepDungeonRadar.Radar.DeepDungeonData;
 namespace DeepDungeonRadar.Radar;
 
@@ -49,27 +49,8 @@ public class RadarObject
     {
         Obj = gameObject;
         DDS = deepDungeonService;
-        if (Obj.IsIgnored())
-            Kind = RadarObjectKind.Unknown;
-        else if (Obj.IsPlayer())
+        if (Obj.IsPlayer())
             Kind = RadarObjectKind.Player;
-        else if (Obj.IsMob(out var b))
-        {
-            if (b.IsHelpfulNpc())
-                Kind = RadarObjectKind.HelpfulNpc;
-            else if (b.IsKerrigan())
-                Kind = RadarObjectKind.Kerrigan;
-            else if (b.IsMimic())
-                Kind = RadarObjectKind.Mimic;
-            else
-                Kind = RadarObjectKind.Enemy;
-        }
-        else if (Obj.IsPassage())
-            Kind = RadarObjectKind.Passage;
-        else if (Obj.IsReturn())
-            Kind = RadarObjectKind.Return;
-        else if (Obj.IsVotive())
-            Kind = RadarObjectKind.Votive;
         else if (Obj.IsGoldChest())
             Kind = RadarObjectKind.GoldChest;
         else if (Obj.IsSilverChest())
@@ -80,6 +61,25 @@ public class RadarObject
             Kind = RadarObjectKind.MimicChest;
         else if (Obj.IsAccursedHoard())
             Kind = RadarObjectKind.AccursedHoard;
+        else if (Obj.IsVotive())
+            Kind = RadarObjectKind.Votive;
+        else if (Obj.IsPassage())
+            Kind = RadarObjectKind.Passage;
+        else if (Obj.IsReturn())
+            Kind = RadarObjectKind.Return;
+        else if (Obj.IsBattleNpc(out var b))
+        {
+            if (b.IsHelpfulNpc())
+                Kind = RadarObjectKind.HelpfulNpc;
+            else if (b.IsKerrigan())
+                Kind = RadarObjectKind.Kerrigan;
+            else if (b.IsMimic())
+                Kind = RadarObjectKind.Mimic;
+            else if (b.IsIgnoredBNpc())
+                Kind = RadarObjectKind.Unknown;
+            else
+                Kind = RadarObjectKind.Enemy;
+        }
     }
     private DeepDungeonService DDS { get; }
 
@@ -87,7 +87,7 @@ public class RadarObject
 
     public RadarObjectKind Kind { get; set; } = RadarObjectKind.Unknown;
 
-    public Vector2 Position2D => Obj.Position.ToVector2();
+    public Vector2 Position => Obj.Position.ToVector2();
 
     public Marker GetMarkerConfig()
     {

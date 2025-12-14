@@ -10,6 +10,7 @@ using DeepDungeonRadar.Config;
 using DeepDungeonRadar.Utils;
 using ECommons.DalamudServices;
 using ECommons.GameHelpers;
+using ECommons.MathHelpers;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 
 namespace DeepDungeonRadar.Radar;
@@ -123,8 +124,8 @@ public sealed class RadarWindow : Window
                 if (passages.Count == 1)
                     passages.Clear();
                 else
-                    passages.Remove(mapService.PositionToRoomIndex(o.Position2D()));
-                PassageMarkers.Add(o.Position2D());
+                    passages.Remove(mapService.PositionToRoomIndex(radarObj.Position));
+                PassageMarkers.Add(radarObj.Position);
 
             }
             if (radarObj.ShouldDraw())
@@ -199,14 +200,14 @@ public sealed class RadarWindow : Window
 
         HomeFlagTex.DrawOnWindow(
             radarWindow,
-            deepDungeonService.LandingPosition.ToVector2().Transform(worldToRadarMatrix));
+            deepDungeonService.LandingPosition.Transform(worldToRadarMatrix));
     }
 
     private void DrawRadarObjects()
     {
         foreach (var radarObj in RadarObjList)
         {
-            var pos = radarObj.Position2D.Transform(worldToRadarMatrix);
+            var pos = radarObj.Position.Transform(worldToRadarMatrix);
             if (radarObj.ShowName())
                 radarWindow.DrawDotWithText(
                     pos,
@@ -262,18 +263,19 @@ public sealed class RadarWindow : Window
         }
 
         // 画辅助圈
-        radarWindow.AddCircle(meRadarPos, radarScale * 80f, config.RadarSenseCircleOutlineColor, 100);
+        radarWindow.AddCircle(meRadarPos, radarScale * 80f, config.RadarSenseCircleOutlineColor);
     }
 
     private void DrawPassagesRangeArrows()
     {
         foreach (var passagePos in PassageMarkers)
         {
-            var distance = passagePos.Distance(meWorldPos);
+            var offset = passagePos - meWorldPos;
+            var distance = offset.Length();
             if (distance <= 80f)
                 continue;
-            var arrowRotation = (passagePos - meWorldPos).ToRotation();
-            var arrowWorldPos = meWorldPos + (passagePos - meWorldPos) * 80f / distance; // 画在圈上
+            var arrowRotation = Angle.FromDirection(offset).Rad;
+            var arrowWorldPos = meWorldPos + 80f * offset / distance; // 画在圈上
             ArrowIcon.DrawOnWindow(
                 radarWindow,
                 arrowWorldPos.Transform(worldToRadarMatrix),

@@ -12,6 +12,7 @@ using DeepDungeonRadar.Config;
 using DeepDungeonRadar.Utils;
 using ECommons.DalamudServices;
 using ECommons.GameHelpers;
+using ECommons.MathHelpers;
 using SkiaSharp;
 namespace DeepDungeonRadar.Radar;
 
@@ -231,11 +232,10 @@ public sealed class MapService : IDisposable
             Svc.Log.Warning($"Map not found for [{bg}]");
             return false;
         }
-        var landing = deepDungeonService.LandingPosition.ToVector2();
-        CurrentMap = Find(landing);
+        CurrentMap = Find(deepDungeonService.LandingPosition);
         if (CurrentMap == default)
         {
-            Svc.Log.Warning($"Map not found for landing position {landing} on [{bg}]");
+            Svc.Log.Warning($"Map not found for landing position {deepDungeonService.LandingPosition} on [{bg}]");
             return false;
         }
         Svc.Log.Debug($"Loaded map for [{bg}]");
@@ -380,7 +380,7 @@ public sealed class MapService : IDisposable
             return startX < 0 || startY < 0 || startX >= width || startY >= height || pixels[startX + startY * width] != PixelType.UnreachableArea;
         }
 
-        var startPoint = deepDungeonService.LandingPosition.ToVector2();
+        var startPoint = deepDungeonService.LandingPosition;
         // 泛洪填充算法，将spawnPoint所在区域填充为通路，遇到边界后把边界改为可达边界
         // 边界检查
         if (IsInvalidStartPoint(startPoint, CurrentMap.Info.TopLeft, pixels, width, height))

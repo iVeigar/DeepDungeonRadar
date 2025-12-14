@@ -50,10 +50,13 @@ public static class DeepDungeonData
     public const uint TriggeredTrapId = 6388; 
     public const uint VotiveId = 2014759;
 
-    public static readonly HashSet<uint> IgnoredIds =  // BaseId
+    public static readonly HashSet<uint> IgnoredBNpc =
     [
-        6388, // Trap object at <0, 0>, or invisible triggered trap
-        15898, 15899 // 乌内N12321，多加N12320
+        5042,  // Trap object at <0, 0>, or invisible triggered trap
+        12321, // 乌内
+        12320, // 多加
+        14268, // 缇坦妮雅
+        14269, // 菲奥乌儿
     ];
 
     public static readonly HashSet<uint> MimicNameIds =
@@ -129,10 +132,10 @@ public static class DeepDungeonData
         return chest->Flags != FFXIVClientStructs.FFXIV.Client.Game.Object.Treasure.TreasureFlags.None;
     }
 
-    public static bool IsIgnored(this IGameObject obj) => IgnoredIds.Contains(obj.BaseId);
+    public static bool IsIgnoredBNpc(this IBattleNpc bNpc) => IgnoredBNpc.Contains(bNpc.NameId);
     public static bool IsPlayer(this IGameObject obj) => obj.ObjectKind == ObjectKind.Player;
 
-    public static bool IsMob(this IGameObject obj, out IBattleNpc bNpc)
+    public static bool IsBattleNpc(this IGameObject obj, out IBattleNpc bNpc)
     {
         if (obj.ObjectKind == ObjectKind.BattleNpc && (BattleNpcSubKind)obj.SubKind == BattleNpcSubKind.Enemy)
         {

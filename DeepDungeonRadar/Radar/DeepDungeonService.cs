@@ -9,6 +9,7 @@ using ECommons.EzHookManager;
 using ECommons.GameHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using RoomFlags = FFXIVClientStructs.FFXIV.Client.Game.InstanceContent.InstanceContentDeepDungeon.RoomFlags;
+using ECommons.MathHelpers;
 namespace DeepDungeonRadar.Radar;
 
 public sealed partial class DeepDungeonService : IDisposable
@@ -34,7 +35,7 @@ public sealed partial class DeepDungeonService : IDisposable
     public bool FloorTransfer { get; private set; } = true;
     public bool ReturnActivated { get; private set; }
     public bool PassageActivated { get; private set; }
-    public Vector3 LandingPosition { get; private set; }
+    public Vector2 LandingPosition { get; private set; }
     public DeepDungeonService()
     {
         EzSignatureHelper.Initialize(this);
@@ -99,7 +100,7 @@ public sealed partial class DeepDungeonService : IDisposable
         }
         FloorTransfer = AccursedHoardOpened = ReturnActivated = PassageActivated = false;
         CurrentFloor = dd->Floor;
-        LandingPosition = Player.Position;
+        LandingPosition = Player.Position.ToVector2();
         Svc.Log.Debug($"Entered new floor #{CurrentFloor}");
         EnteredNewFloor?.Invoke();
     }
