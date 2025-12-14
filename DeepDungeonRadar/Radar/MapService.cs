@@ -12,6 +12,7 @@ using DeepDungeonRadar.Config;
 using DeepDungeonRadar.Utils;
 using ECommons.DalamudServices;
 using ECommons.GameHelpers;
+using ECommons.Logging;
 using ECommons.MathHelpers;
 using SkiaSharp;
 namespace DeepDungeonRadar.Radar;
@@ -104,7 +105,7 @@ public sealed class MapService : IDisposable
         }
         catch (Exception ex)
         {
-            Svc.Log.Error($"Failed to load maplist.json", ex);
+            PluginLog.Error($"Failed to load maplist.json, {ex}");
             mapEntries.Clear();
         }
     }
@@ -229,16 +230,16 @@ public sealed class MapService : IDisposable
         var bg = Player.Territory.ToBg().ToString();
         if (!TryLoadMaps(bg))
         {
-            Svc.Log.Warning($"Map not found for [{bg}]");
+            PluginLog.Warning($"Map not found for [{bg}]");
             return false;
         }
         CurrentMap = Find(deepDungeonService.LandingPosition);
         if (CurrentMap == default)
         {
-            Svc.Log.Warning($"Map not found for landing position {deepDungeonService.LandingPosition} on [{bg}]");
+            PluginLog.Warning($"Map not found for landing position {deepDungeonService.LandingPosition} on [{bg}]");
             return false;
         }
-        Svc.Log.Debug($"Loaded map for [{bg}]");
+        PluginLog.Debug($"Loaded map for [{bg}]");
         return true;
     }
 
@@ -246,7 +247,7 @@ public sealed class MapService : IDisposable
     {
         if (!mapEntries.TryGetValue(bg, out var mapInfoList))
         {
-            Svc.Log.Error($"Map [{bg}] not found in mapEntries");
+            PluginLog.Error($"Map [{bg}] not found in mapEntries");
             return false;
         }
 
@@ -262,7 +263,7 @@ public sealed class MapService : IDisposable
             }
             catch (Exception ex)
             {
-                Svc.Log.Error($"Failed to load {info.Filename}: {ex}");
+                PluginLog.Error($"Failed to load {info.Filename}: {ex}");
             }
         }
         return true;
@@ -270,10 +271,10 @@ public sealed class MapService : IDisposable
 
     private unsafe void GenProcessedMap()
     {
-        Svc.Log.Debug($"Start processing original 1bpp map");
+        PluginLog.Debug($"Start processing original 1bpp map");
         if (CurrentMap == default)
         {
-            Svc.Log.Warning($"Current map is default, cannot process map");
+            PluginLog.Warning($"Current map is default, cannot process map");
             return;
         }
 
@@ -321,7 +322,7 @@ public sealed class MapService : IDisposable
             if (pixels[topNeighbor] == PixelType.UnreachableArea)
                 pixels[idx] = PixelType.UnreachableAreaBorder;
         }
-        Svc.Log.Debug($"Step 1 done");
+        PluginLog.Debug($"Step 1 done");
 
         // 根据ColliderBoxManager中的墙体位置，沿着墙体方向向两侧扩展，直到遇到已经标记为墙体边界的像素为止
         foreach (var (wallPos, (vertical, blocked)) in colliderBoxService.ColliderBoxes)
@@ -371,7 +372,7 @@ public sealed class MapService : IDisposable
                 }
             }
         }
-        Svc.Log.Debug($"Step 2 done");
+        PluginLog.Debug($"Step 2 done");
 
         static bool IsInvalidStartPoint(Vector2 sp, Vector2 topLeft, uint* pixels, int width, int height)
         {
@@ -385,11 +386,11 @@ public sealed class MapService : IDisposable
         // 边界检查
         if (IsInvalidStartPoint(startPoint, CurrentMap.Info.TopLeft, pixels, width, height))
         {
-            Svc.Log.Warning($"Flood fill starting point {startPoint} is invalid, change to an opened wall..");
+            PluginLog.Warning($"Flood fill starting point {startPoint} is invalid, change to an opened wall..");
             startPoint = colliderBoxService.ColliderBoxes.FirstOrDefault(kv => !kv.Value.Blocked && !IsInvalidStartPoint(kv.Key.ToVector2(), CurrentMap.Info.TopLeft, pixels, width, height)).Key.ToVector2();
             if (startPoint == default)
             {
-                Svc.Log.Error($"No opened wall found, cannot perform flood fill");
+                PluginLog.Error($"No opened wall found, cannot perform flood fill");
                 return;
             }
         }
@@ -429,16 +430,20 @@ public sealed class MapService : IDisposable
                 }
             }
         }
+        PluginLog.Debug($"Step 3 done");
+        PluginLog.Debug($"Processed map data of {CurrentMap.Info.Filename}");
+            }
+        }
         Svc.Log.Debug($"Step 3 done");
         Svc.Log.Debug($"Processed map data of {CurrentMap.Info.Filename}");
     }
 
     private unsafe void GenColoredMap()
     {
-        Svc.Log.Debug($"Start coloring map");
+        PluginLog.Debug($"Start coloring map");
         if (processedMap == null)
         {
-            Svc.Log.Warning($"Processed map is null, cannot color map");
+            PluginLog.Warning($"Processed map is null, cannot color map");
             return;
         }
         var width = processedMap.Width;
@@ -496,13 +501,13 @@ public sealed class MapService : IDisposable
                 }
             }
         }
-        Svc.Log.Debug($"Coloring finished");
+        PluginLog.Debug($"Coloring finished");
 
         ColoredMapTexture = Svc.Texture.CreateFromRaw(
             RawImageSpecification.Rgba32(width, height),
             new ReadOnlySpan<byte>((void*)coloredMap.GetPixels(), width * height * 4)
             );
-        Svc.Log.Debug($"Built colored map texture for {CurrentMap.Info.Filename}");
+        PluginLog.Debug($"Built colored map texture for {CurrentMap.Info.Filename}");
     }
 
     private static Vector2 ReadVector2(JsonElement obj, string tag) => new(obj.GetProperty(tag + "X").GetSingle(), obj.GetProperty(tag + "Z").GetSingle());

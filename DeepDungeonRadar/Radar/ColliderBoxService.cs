@@ -4,6 +4,7 @@ using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using ECommons.DalamudServices;
 using ECommons.GameHelpers;
+using ECommons.Logging;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Common.Component.BGCollision;
 namespace DeepDungeonRadar.Radar;
@@ -62,12 +63,12 @@ public class ColliderBoxService(DeepDungeonService deepDungeonService)
         }
         catch (Exception ex)
         {
-            Svc.Log.Error($"ColliderBox Update exception: {ex}");
+            PluginLog.Error($"ColliderBox Update exception: {ex}");
         }
 
         if (ColliderBoxes.Count == 0)
         {
-            Svc.Log.Warning("ColliderBox Update: no ColliderBox !");
+            PluginLog.Warning("ColliderBox Update: no ColliderBox !");
         }
     }
 

@@ -10,6 +10,7 @@ using ECommons.GameHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using RoomFlags = FFXIVClientStructs.FFXIV.Client.Game.InstanceContent.InstanceContentDeepDungeon.RoomFlags;
 using ECommons.MathHelpers;
+using ECommons.Logging;
 namespace DeepDungeonRadar.Radar;
 
 public sealed partial class DeepDungeonService : IDisposable
@@ -77,7 +78,7 @@ public sealed partial class DeepDungeonService : IDisposable
                 InPotD = InHoH = InEO = InPT = AccursedHoardOpened = ReturnActivated = PassageActivated = false;
                 CurrentFloor = 0;
                 FloorTransfer = true;
-                Svc.Log.Debug($"Exited deep dungeon");
+                PluginLog.Debug($"Exited deep dungeon");
                 ExitingCurrentFloor?.Invoke(true);
             }
         }
@@ -101,7 +102,7 @@ public sealed partial class DeepDungeonService : IDisposable
         FloorTransfer = AccursedHoardOpened = ReturnActivated = PassageActivated = false;
         CurrentFloor = dd->Floor;
         LandingPosition = Player.Position.ToVector2();
-        Svc.Log.Debug($"Entered new floor #{CurrentFloor}");
+        PluginLog.Debug($"Entered new floor #{CurrentFloor}");
         EnteredNewFloor?.Invoke();
     }
 
@@ -121,7 +122,7 @@ public sealed partial class DeepDungeonService : IDisposable
                     PassageActivated = true;
                 break;
             case 7248: // 2#1
-                Svc.Log.Debug("Exiting current floor..");
+                PluginLog.Debug("Exiting current floor..");
                 FloorTransfer = true;
                 ExitingCurrentFloor?.Invoke(false);
                 break;

@@ -170,8 +170,6 @@ public static class DeepDungeonData
 
     public static bool IsMimicChest(this IGameObject obj) => MimicChestId == obj.BaseId;
 
-    public static Vector2 Position2D(this IGameObject obj) => obj.Position.ToVector2();
-
     public static DeepDungeonBg ToBg(this uint territory) => Enum.TryParse<DeepDungeonBg>(Svc.Data.GetExcelSheet<TerritoryType>().GetRow(territory).Bg.ToString().Split('/')[^1], true, out var bg) ? bg : DeepDungeonBg.none;
 
     public static bool InPotD(this uint territory) => PotDTerritoryIds.Contains(territory);
