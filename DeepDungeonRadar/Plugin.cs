@@ -16,9 +16,9 @@ public sealed class Plugin : IDalamudPlugin
     public readonly WindowSystem WindowSystem = new("DeepDungeonRadar");
     private readonly RadarWindow radarWindow;
     private readonly ConfigWindow configWindow;
-    private readonly DeepDungeonService deepDungeonService;
-    private readonly ColliderBoxService colliderBoxService;
-    private readonly MapService mapService;
+    public readonly DeepDungeonService deepDungeonService;
+    public readonly ColliderBoxService colliderBoxService;
+    public readonly MapService mapService;
     public static Configuration Config { get; private set; }
 
     public Plugin(IDalamudPluginInterface pi)

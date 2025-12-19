@@ -89,15 +89,15 @@ public sealed partial class DeepDungeonService : IDisposable
         if (!Svc.Condition[ConditionFlag.InDeepDungeon]) 
             return;
         var dd = EventFramework.Instance()->GetInstanceContentDeepDungeon();
-        if (dd == null || dd->Floor == 0 || dd->ContentId == 60052)
+        if (dd == null || dd->Floor == 0 || !dd->ContentId.InRange(60001, 60050, true))
             return;
 
         if (!InDeepDungeon)
         {
-            InPotD = dd->DeepDungeonId == 1;
-            InHoH = dd->DeepDungeonId == 2;
-            InEO = dd->DeepDungeonId == 3;
-            InPT = dd->DeepDungeonId == 4;
+            InPotD = dd->ContentId.InRange(60001, 60020, true);
+            InHoH = dd->ContentId.InRange(60021, 60030, true);
+            InEO = dd->ContentId.InRange(60031, 60040, true);
+            InPT = dd->ContentId.InRange(60041, 60050, true);
         }
         FloorTransfer = AccursedHoardOpened = ReturnActivated = PassageActivated = false;
         CurrentFloor = dd->Floor;

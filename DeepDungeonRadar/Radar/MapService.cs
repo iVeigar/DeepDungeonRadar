@@ -227,7 +227,7 @@ public sealed class MapService : IDisposable
     {
         if (!deepDungeonService.HasMap)
             return false;
-        var bg = Player.Territory.ToBg().ToString();
+        var bg = Player.Territory.RowId.ToBg().ToString();
         if (!TryLoadMaps(bg))
         {
             PluginLog.Warning($"Map not found for [{bg}]");

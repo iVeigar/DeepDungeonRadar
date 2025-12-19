@@ -28,8 +28,27 @@ public sealed class ConfigWindow : Window
 
         DrawTabGeneralSettings();
         DrawTabMarkerSettings();
+#if DEBUG
+        DrawTabDebug();
+#endif
     }
+#if DEBUG
+    public void DrawTabDebug()
+    {
+        using var tabItem = ImRaii.TabItem("调试");
+        if (!tabItem) return;
 
+        ImGui.Text($"InPotD: {plugin.deepDungeonService.InPotD}");
+        ImGui.Text($"InHoH: {plugin.deepDungeonService.InHoH}");
+        ImGui.Text($"InEO: {plugin.deepDungeonService.InEO}");
+        ImGui.Text($"InPT: {plugin.deepDungeonService.InPT}");
+        ImGui.Text($"InDeepDungeon: {plugin.deepDungeonService.InDeepDungeon}");
+        ImGui.Text($"CurrentFloor: {plugin.deepDungeonService.CurrentFloor}");
+        ImGui.Text($"HasMap: {plugin.deepDungeonService.HasMap}");
+        ImGui.Text($"FloorTransfer: {plugin.deepDungeonService.FloorTransfer}");
+        ImGui.Text($"IsRadarReady: {plugin.deepDungeonService.IsRadarReady}");
+    }
+#endif
     public override void OnClose()
     {
         if (changed)
