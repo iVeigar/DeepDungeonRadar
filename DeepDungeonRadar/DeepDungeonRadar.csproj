@@ -10,7 +10,7 @@
 		<PackageVersion_DalamudPackager>14.0.1</PackageVersion_DalamudPackager>
 	</PropertyGroup>
 	<PropertyGroup>
-		<Version>7.40.0.0</Version>
+		<Version>7.40.0.1</Version>
 		<Author>iVeigar</Author>
 		<Name>深宫小地图</Name>
 		<Punchline>快速摸清周围状况！</Punchline>
