@@ -432,10 +432,6 @@ public sealed class MapService : IDisposable
         }
         PluginLog.Debug($"Step 3 done");
         PluginLog.Debug($"Processed map data of {CurrentMap.Info.Filename}");
-            }
-        }
-        Svc.Log.Debug($"Step 3 done");
-        Svc.Log.Debug($"Processed map data of {CurrentMap.Info.Filename}");
     }
 
     private unsafe void GenColoredMap()
